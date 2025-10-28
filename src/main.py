@@ -74,7 +74,7 @@ def validate_github_token() -> bool:
         return False
 
     # Skip validation in test environment
-    if any(x in sys.modules for x in ['pytest', '_pytest']):
+    if any(x in sys.modules for x in ["pytest", "_pytest"]):
         logger.info("Skipping GitHub token validation in test environment")
         return True
 
@@ -82,7 +82,7 @@ def validate_github_token() -> bool:
         # Test token with a simple API call
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "Authorization": f"token {github_token}"
+            "Authorization": f"token {github_token}",
         }
 
         # Use a simple API call to validate the token
@@ -113,7 +113,7 @@ def run_catalogue(file_path: str) -> int:
     catalogue = ModelCatalogue()
 
     try:
-        with open(file_path, 'r', encoding='ascii') as f:
+        with open(file_path, "r", encoding="ascii") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -121,7 +121,7 @@ def run_catalogue(file_path: str) -> int:
                     continue
 
                 # Parse URL Fields into Parts
-                parts = [part.strip() for part in line.split(',')]
+                parts = [part.strip() for part in line.split(",")]
 
                 # Exactly 3 URL Fields Must Exist
                 if len(parts) != 3:

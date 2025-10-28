@@ -33,7 +33,6 @@ Notes
 
 """
 
-
 from src.ModelData import ModelData
 from src.Metric import Metric
 from loguru import logger
@@ -72,9 +71,9 @@ class SizeMetric(Metric):
     # Device specifications with usable memory (after overhead and penalties)
     DEVICE_SPECS = {
         "raspberry_pi": 0.5,  # 0.5GB usable
-        "jetson_nano": 1.0,   # 1GB usable
-        "desktop_pc": 20.0,   # 24GB - 4GB overhead = 20GB usable
-        "aws_server": 60.0    # 64GB - 4GB overhead = 60GB usable
+        "jetson_nano": 1.0,  # 1GB usable
+        "desktop_pc": 20.0,  # 24GB - 4GB overhead = 20GB usable
+        "aws_server": 60.0,  # 64GB - 4GB overhead = 60GB usable
     }
 
     DEFAULT_BYTES_PER_PARAM = 2  # Default to float16
@@ -123,7 +122,7 @@ class SizeMetric(Metric):
                 # Fallback: use usedStorage if available
                 if "usedStorage" in metadata:
                     size_bytes = metadata["usedStorage"]
-                    size_gb = size_bytes / (1024 ** 3)
+                    size_gb = size_bytes / (1024**3)
                     logger.info(f"Using usedStorage size: {size_gb:.2f}GB")
                     return size_gb
                 logger.info("No usedStorage info available")
@@ -134,7 +133,7 @@ class SizeMetric(Metric):
 
             # Calculate model size: param_count * bytes_per_param
             size_bytes = param_count * bytes_per_param
-            size_gb = size_bytes / (1024 ** 3)
+            size_gb = size_bytes / (1024**3)
 
             logger.info(
                 f"Model size: {param_count:,} params * {bytes_per_param} \
@@ -160,7 +159,7 @@ class SizeMetric(Metric):
                 if "parameters" in safetensors and safetensors["parameters"]:
                     # Use the first param type directly
                     dtype = list(safetensors["parameters"].keys())[0]
-                    match = re.search(r'(\d+)', dtype)
+                    match = re.search(r"(\d+)", dtype)
                     if match:
                         bits = int(match.group(1))
                         bytes_per_param = bits / 8
@@ -178,7 +177,7 @@ class SizeMetric(Metric):
                 if torch_dtype:
                     # Extract number from dtype name
                     # (e.g., "float16" -> 16, "int8" -> 8)
-                    match = re.search(r'(\d+)', str(torch_dtype))
+                    match = re.search(r"(\d+)", str(torch_dtype))
                     if match:
                         bits = int(match.group(1))
                         bytes_per_param = bits / 8  # Convert bits to bytes
@@ -230,9 +229,15 @@ class SizeMetric(Metric):
             if "config" in metadata:
                 config = metadata["config"]
                 for field in [
-                    "num_parameters", "n_parameters", "total_params",
-                    "parameters", "total_parameters", "model_parameters",
-                    "parameter_count", "params", "n_params"
+                    "num_parameters",
+                    "n_parameters",
+                    "total_params",
+                    "parameters",
+                    "total_parameters",
+                    "model_parameters",
+                    "parameter_count",
+                    "params",
+                    "n_params",
                 ]:
                     if field in config and isinstance(config[field], (int, float)):
                         param_count: Optional[int] = int(config[field])
@@ -244,9 +249,14 @@ class SizeMetric(Metric):
 
             # Check direct metadata
             for field in [
-                "num_parameters", "parameters", "total_parameters",
-                "total_params", "model_parameters", "parameter_count",
-                "params", "n_params"
+                "num_parameters",
+                "parameters",
+                "total_parameters",
+                "total_params",
+                "model_parameters",
+                "parameter_count",
+                "params",
+                "n_params",
             ]:
                 if field in metadata and isinstance(metadata[field], (int, float)):
                     param_count = int(metadata[field])
@@ -277,7 +287,7 @@ class SizeMetric(Metric):
         import re
 
         # Single pattern to match: "7b", "3.5B", "70B", "13b", etc.
-        pattern = r'(\d+\.?\d*)[bB]'
+        pattern = r"(\d+\.?\d*)[bB]"
 
         match = re.search(pattern, model_name)
         if match:

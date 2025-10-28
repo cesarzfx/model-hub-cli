@@ -14,9 +14,7 @@ class TestLLMClient:
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-            "choices": [
-                {"message": {"content": "0.75\nExplanation text"}}
-            ]
+            "choices": [{"message": {"content": "0.75\nExplanation text"}}]
         }
         mock_post.return_value = mock_response
 

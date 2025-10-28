@@ -67,7 +67,7 @@ class RampUpMetric(Metric):
             "Installation": ["installation", "setup", "getting started"],
             "Usage": ["usage", "how to use", "examples"],
             "Dataset": ["dataset", "data", "inputs"],
-            "Training": ["training", "train", "fine-tune", "finetune"]
+            "Training": ["training", "train", "fine-tune", "finetune"],
         }
 
         # Match H2/H3 markdown headings and their content

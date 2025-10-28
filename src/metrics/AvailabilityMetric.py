@@ -45,6 +45,8 @@ class AvailabilityMetric(Metric):
         score = successful_checks / total_checks
         logger.info(
             "AvailabilityMetric: {}/{} resources available -> {}",
-            successful_checks, total_checks, score
+            successful_checks,
+            total_checks,
+            score,
         )
         return score

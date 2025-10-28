@@ -134,9 +134,7 @@ class HuggingFaceFetcher(MetadataFetcher):
 
 class GitHubFetcher(MetadataFetcher):
     def __init__(
-        self,
-        token: Optional[str] = None,
-        session: Optional[requests.Session] = None
+        self, token: Optional[str] = None, session: Optional[requests.Session] = None
     ) -> None:
         self.token = token
         self.session = session or requests.Session()
@@ -231,6 +229,7 @@ class GitHubFetcher(MetadataFetcher):
 
 class DatasetFetcher(MetadataFetcher):
     """Fetches dataset metadata from Hugging Face datasets API."""
+
     def __init__(self, session: Optional[requests.Session] = None) -> None:
         self.session = session or requests.Session()
         self.BASE_API_URL = "https://huggingface.co/api/datasets"

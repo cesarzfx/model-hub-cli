@@ -44,7 +44,6 @@ Testing Notes
 - Use mocked metrics to simulate model scoring in tests.
 """
 
-
 import json
 
 from loguru import logger
@@ -76,7 +75,7 @@ class ModelCatalogue:
             SizeMetric(),
             CodeQualityMetric(),
             DatasetQualityMetric(),
-            RampUpMetric()
+            RampUpMetric(),
         ]
 
     def addModel(self, model: Model) -> None:
@@ -89,7 +88,7 @@ class ModelCatalogue:
             Code URL = '{}'""",
             model.modelLink,
             model.datasetLink,
-            model.codeLink
+            model.codeLink,
         )
 
     def evaluateModels(self) -> None:

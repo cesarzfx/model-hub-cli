@@ -54,8 +54,16 @@ from src.Metric import Metric
 
 class BusFactorMetric(Metric):
     LARGE_COMPANIES = {
-        "google", "facebook", "microsoft", "openai", "huggingface",
-        "amazon", "ibm", "apple", "tencent", "baidu"
+        "google",
+        "facebook",
+        "microsoft",
+        "openai",
+        "huggingface",
+        "amazon",
+        "ibm",
+        "apple",
+        "tencent",
+        "baidu",
     }
 
     MAX_TOP_CONTRIBS = 10
@@ -87,8 +95,7 @@ class BusFactorMetric(Metric):
         # Get contributors from Github metadata
         github_metadata = model.github_metadata
         contributors = (
-            github_metadata.get("contributors", [])
-            if github_metadata else []
+            github_metadata.get("contributors", []) if github_metadata else []
         )
         logger.debug("Number of contributors found: {}", len(contributors))
 
@@ -99,10 +106,8 @@ class BusFactorMetric(Metric):
 
         # Top contributors sorted by contributions descending
         top_contribs = sorted(
-            contributors,
-            key=lambda c: c.get("contributions", 0),
-            reverse=True
-        )[:self.MAX_TOP_CONTRIBS]
+            contributors, key=lambda c: c.get("contributions", 0), reverse=True
+        )[: self.MAX_TOP_CONTRIBS]
 
         # Zero contributors -> minimum score
         num_contribs = len(top_contribs)

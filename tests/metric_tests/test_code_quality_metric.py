@@ -76,6 +76,7 @@ class TestCodeQualityMetric(BaseMetricTest):
     ) -> None:
         logger.info("Testing repository cloning failure...")
         from git.exc import GitCommandError
+
         mock_clone.side_effect = GitCommandError("clone", "git clone failed")
 
         result = metric._clone_repository(
@@ -90,6 +91,7 @@ class TestCodeQualityMetric(BaseMetricTest):
     ) -> None:
         logger.info("Testing repository cloning git error...")
         from git.exc import GitError
+
         mock_clone.side_effect = GitError("git error")
 
         result = metric._clone_repository(
@@ -139,16 +141,18 @@ class TestCodeQualityMetric(BaseMetricTest):
 
     @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
     def test_full_evaluation_with_clone(
-        self, mock_clone: MagicMock,
+        self,
+        mock_clone: MagicMock,
         metric: CodeQualityMetric,
-        model_with_clone_url: Any
+        model_with_clone_url: Any,
     ) -> None:
         logger.info("Testing full evaluation with repository cloning...")
 
         mock_clone.return_value = MagicMock()
 
-        with patch.object(metric, "_evaluate_testing_quality", return_value=0.2), \
-             patch.object(metric, "_evaluate_documentation", return_value=0.15):
+        with patch.object(
+            metric, "_evaluate_testing_quality", return_value=0.2
+        ), patch.object(metric, "_evaluate_documentation", return_value=0.15):
 
             score = metric.evaluate(model_with_clone_url)
 
@@ -243,13 +247,13 @@ class TestCodeQualityMetric(BaseMetricTest):
             "stargazers_count": 10000,
             "forks_count": 1000,
             "avg_daily_commits_30d": 20.0,
-            "clone_url": "https://github.com/test/repo.git"
+            "clone_url": "https://github.com/test/repo.git",
         }
 
         # Mock successful clone and high analysis scores
-        with patch.object(metric, '_clone_repository', return_value=True), \
-             patch.object(metric, '_evaluate_testing_quality', return_value=0.5), \
-             patch.object(metric, '_evaluate_documentation', return_value=0.5):
+        with patch.object(metric, "_clone_repository", return_value=True), patch.object(
+            metric, "_evaluate_testing_quality", return_value=0.5
+        ), patch.object(metric, "_evaluate_documentation", return_value=0.5):
 
             score = metric.evaluate(model)
             assert score == 1.0  # Should be capped at 1.0

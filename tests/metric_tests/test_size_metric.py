@@ -100,7 +100,7 @@ class TestSizeMetric:
         self, metric: SizeMetric, model_with_metadata: Mock
     ) -> None:
         """Test successful model size calculation."""
-        size_gb : Optional[float] = metric._get_model_size(model_with_metadata)
+        size_gb: Optional[float] = metric._get_model_size(model_with_metadata)
 
         assert size_gb is not None
         # 7B params * 2 bytes = 14GB / 1024^3 ≈ 13.04GB
@@ -114,7 +114,7 @@ class TestSizeMetric:
         mock_model.hf_metadata = {
             "config": {"num_parameters": 1_000_000_000, "torch_dtype": "float32"}
         }
-        size_gb : Optional[float] = metric._get_model_size(mock_model)
+        size_gb: Optional[float] = metric._get_model_size(mock_model)
         assert size_gb is not None
         assert 3.5 <= size_gb <= 4.0  # 1B * 4 bytes ≈ 3.7GB
 
@@ -163,7 +163,7 @@ class TestSizeMetric:
     def test_extract_bytes_quantization_precedence(self, metric: SizeMetric) -> None:
         """Test dtype extraction precedence and quantization."""
         # Quantization only
-        metadata : dict[str, Any] = {"config": {"quantization_config": {"bits": 4}}}
+        metadata: dict[str, Any] = {"config": {"quantization_config": {"bits": 4}}}
         assert metric._extract_bytes_from_dtype(metadata) == 0.5
 
         # torch_dtype takes precedence over quantization

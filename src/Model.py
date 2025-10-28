@@ -47,25 +47,20 @@ Environment
 
 """
 
-
 import concurrent.futures
 import os
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 from loguru import logger
 
 from src.Metric import Metric
 from src.ModelData import ModelData
-from src.util.metadata_fetchers import (DatasetFetcher, GitHubFetcher,
-                                        HuggingFaceFetcher)
+from src.util.metadata_fetchers import DatasetFetcher, GitHubFetcher, HuggingFaceFetcher
 
 
 class Model(ModelData):
-    def __init__(
-        self,
-        urls: List[str]
-    ) -> None:
+    def __init__(self, urls: List[str]) -> None:
         # Extract URLs
         self.codeLink: Optional[str] = urls[0] if urls[0] else None
         self.datasetLink: Optional[str] = urls[1] if urls[1] else None
@@ -132,7 +127,11 @@ class Model(ModelData):
         return int(latency * 1000)
 
     def evaluate_all(self, metrics: List[Metric]) -> None:
-        def evaluate_metric(metric: Metric):
+        def evaluate_metric(
+            metric: Metric,
+        ) -> Tuple[
+            Metric, Union[float, Dict[str, float]], float
+        ]:
             start = time.time()
             score = metric.evaluate(self)
             latency = time.time() - start
@@ -180,6 +179,7 @@ class Model(ModelData):
         )
         self.evaluations["NetScore"] = license_score * weighted_sum
         self.evaluationsLatency["NetScore"] = sum(
-            latency for key, latency in self.evaluationsLatency.items()
+            latency
+            for key, latency in self.evaluationsLatency.items()
             if key != "NetScore"
         )

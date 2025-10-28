@@ -65,7 +65,7 @@ class DatasetQualityMetric(Metric):
         self.api_url: str = "https://genai.rcac.purdue.edu/api/chat/completions"
         self.headers: Dict[str, str] = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def evaluate(self, model: ModelData) -> float:
@@ -124,13 +124,8 @@ No explanation needed.
         try:
             body: Dict[str, Any] = {
                 "model": "llama3.1:latest",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "stream": False  # We want a complete response, not streaming
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,  # We want a complete response, not streaming
             }
 
             response = requests.post(self.api_url, headers=self.headers, json=body)
@@ -167,7 +162,7 @@ No explanation needed.
         """Extract numerical score from LLM response."""
         try:
             # Look for decimal numbers
-            matches: List[str] = re.findall(r'\b\d*\.?\d+\b', content)
+            matches: List[str] = re.findall(r"\b\d*\.?\d+\b", content)
 
             if matches:
                 # Take the first number found
