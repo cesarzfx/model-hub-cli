@@ -59,18 +59,18 @@ class ModelData(Protocol):
 
     @property
     @abstractmethod
-    def hf_metadata(self) -> Dict[str, Any]:
-        """Cached HuggingFace metadata"""
+    def hf_metadata(self) -> Optional[Dict[str, Any]]:
+        """Cached HuggingFace metadata (may be None if unavailable)"""
         ...
 
     @property
     @abstractmethod
-    def github_metadata(self) -> Dict[str, Any]:
-        """Cached GitHub metadata"""
+    def github_metadata(self) -> Optional[Dict[str, Any]]:
+        """Cached GitHub metadata (may be None if unavailable)"""
         ...
 
     @property
     @abstractmethod
-    def dataset_metadata(self) -> Dict[str, Any]:
-        """Cached Dataset metadata"""
+    def dataset_metadata(self) -> Optional[Dict[str, Any]]:
+        """Cached Dataset metadata (may be None if unavailable)"""
         ...

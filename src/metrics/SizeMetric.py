@@ -240,7 +240,7 @@ class SizeMetric(Metric):
                     "n_params",
                 ]:
                     if field in config and isinstance(config[field], (int, float)):
-                        param_count: Optional[int] = int(config[field])
+                        param_count = int(config[field])
                         if param_count and param_count > 0:
                             logger.debug(
                                 f"Param count: {param_count:,} at config.{field}"

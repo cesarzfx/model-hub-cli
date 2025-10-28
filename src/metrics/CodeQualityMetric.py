@@ -63,11 +63,22 @@ class CodeQualityMetric(Metric):
         """
         logger.info("Evaluating CodeQualityMetric...")
 
-        if not getattr(model, "_github_metadata", None):
+        # Prefer explicit private cache when tests/mocks set it; otherwise use
+        # the public `github_metadata` property. Ensure we end up with a dict.
+        gh_meta = {}
+        if getattr(model, "_github_metadata", None) and isinstance(
+            getattr(model, "_github_metadata"), dict
+        ):
+            gh_meta = getattr(model, "_github_metadata")
+        elif getattr(model, "github_metadata", None) and isinstance(
+            getattr(model, "github_metadata"), dict
+        ):
+            gh_meta = getattr(model, "github_metadata")
+
+        if not gh_meta:
             logger.info("CodeQualityMetric: No GitHub metadata found → 0.0")
             return 0.0
 
-        gh_meta = model._github_metadata
         clone_url = gh_meta.get("clone_url")
 
         popularity_score = self._calculate_popularity_score(gh_meta)
