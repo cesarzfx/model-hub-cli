@@ -1,30 +1,43 @@
 # service/app/core/config.py
-from pydantic_settings import BaseSettings
-from pydantic import AnyUrl
-from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    APP_NAME: str = "Trustworthy Model Registry"
+    # General
     ENV: str = "dev"
-    DB_URL: str = "sqlite:///./data/registry.db"
+    APP_NAME: str = "Trustworthy Model Registry"
+
+    # Storage / DB
+    DB_URL: str = "sqlite:///./data/registry/db"   # matches earlier examples
     STORAGE_BACKEND: str = "local"
     BLOB_ROOT: str = "./data/blobs"
-    S3_BUCKET: str | None = None
-    AWS_REGION: str | None = None
-    JWT_SECRET: str = "change-me-in-prod"
-    JWT_ISSUER: str = "model-registry"
-    JWT_AUDIENCE: str = "model-registry-users"
-    JWT_EXPIRE_HOURS: int = 10
+    S3_BUCKET: str = ""
+    AWS_REGION: str = "us-east-1"
+
+    # Auth (defaults match the .env you’ve been using)
+    JWT_SECRET: str = "dev-secret-please-change"
+    JWT_ISSUER: str = "model-hub-cli"
+    JWT_AUDIENCE: str = "model-hub-cli-users"
+    JWT_EXPIRE_HOURS: int = 24
     JWT_MAX_CALLS: int = 1000
-    GITHUB_TOKEN: str | None = None
+
+    # Optional GitHub token for Reviewedness metric
+    GITHUB_TOKEN: str = ""
+
+    # Misc
     NODE_PATH: str = "node"
     MAX_PAGE_SIZE: int = 100
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # IMPORTANT: use v2 config style so .env is loaded
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
-from functools import lru_cache
-@lru_cache
+_settings: Settings | None = None
+
 def get_settings() -> Settings:
-    return Settings(_env_file=".env", _env_file_encoding="utf-8")
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings

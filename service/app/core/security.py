@@ -1,47 +1,44 @@
 # service/app/core/security.py
-from __future__ import annotations
-from enum import Enum
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict
-
-import jwt  # PyJWT
 from passlib.context import CryptContext
+import jwt
+from typing import Literal
+from .config import get_settings
 
-from .config import get_settings   # ✅ correct: only import get_settings from .config
+# password hashing context
+pwd_context = CryptContext(
+    schemes=["argon2"], 
+    deprecated="auto"
+)
 
-# ---- Password hashing (PBKDF2; no 72-byte limit like bcrypt) ----
-_pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+Role = Literal["admin", "contributor", "viewer"]
 
-def hash_password(pw: str) -> str:
-    return _pwd.hash(pw)
+def hash_password(password: str) -> str:
+    """Return a bcrypt hash of the given password."""
+    return pwd_context.hash(password)
 
-def verify_password(pw: str, hashed: str) -> bool:
-    return _pwd.verify(pw, hashed)
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a plaintext password against its bcrypt hash."""
+    return pwd_context.verify(password, hashed)
 
-# ---- Roles ----
-class Role(str, Enum):
-    viewer = "viewer"
-    contributor = "contributor"
-    admin = "admin"
-
-# ---- JWT helpers ----
-def create_jwt(sub: str, role: Role, max_calls: int | None = None) -> str:
+def create_jwt(*, subject: str, role: Role) -> str:
+    """Generate a signed JWT for a user."""
     s = get_settings()
     now = datetime.now(timezone.utc)
-    exp = now + timedelta(hours=int(s.JWT_EXPIRE_HOURS))
-    claims: Dict[str, Any] = {
-        "sub": sub,
-        "role": role.value,
+    exp = now + timedelta(hours=s.JWT_EXPIRE_HOURS)
+    payload = {
+        "sub": subject,
+        "role": role,
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp()),
-        "iss": s.JWT_ISSUER,       # ✅ issuer
-        "aud": s.JWT_AUDIENCE,     # ✅ audience
-        "max_calls": int(max_calls if max_calls is not None else s.JWT_MAX_CALLS),
+        "iss": s.JWT_ISSUER,
+        "aud": s.JWT_AUDIENCE,
+        "max_calls": s.JWT_MAX_CALLS,
     }
-    return jwt.encode(claims, s.JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, s.JWT_SECRET, algorithm="HS256")
 
-
-def decode_jwt(token: str) -> Dict[str, Any]:
+def decode_jwt(token: str) -> dict:
+    """Verify and decode a JWT."""
     s = get_settings()
     return jwt.decode(
         token,
@@ -49,4 +46,10 @@ def decode_jwt(token: str) -> Dict[str, Any]:
         algorithms=["HS256"],
         audience=s.JWT_AUDIENCE,
         issuer=s.JWT_ISSUER,
+        options={
+            "require": ["exp", "iss", "aud", "sub"],
+            "verify_signature": True,
+            "verify_aud": True,
+            "verify_iss": True,
+        },
     )

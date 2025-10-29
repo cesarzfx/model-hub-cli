@@ -1,9 +1,12 @@
-fastapi
-uvicorn
-pydantic
-python-jose[cryptography]==3.3.0 ; sys_platform=="never"  # if you choose jose
-PyJWT==2.9.0
-passlib[bcrypt]
-requests
-boto3
-packaging
+fastapi>=0.120
+uvicorn>=0.38
+python-multipart>=0.0.9
+pydantic>=2.11
+pydantic-settings>=2.6
+python-dotenv>=1.0
+PyJWT>=2.9
+passlib>=1.7.4
+argon2-cffi>=25.1.0
+requests>=2.32
+boto3>=1.35
+packaging>=24.1

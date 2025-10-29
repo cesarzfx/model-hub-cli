@@ -1,25 +1,18 @@
 # service/app/api/v1/admin.py
-from fastapi import APIRouter, Depends
-from ...domain import repos
+import os
+from fastapi import APIRouter
 from ...core.security import hash_password
-from ... import deps
+from ...domain import repos
 
 router = APIRouter()
 
-@router.post("/reset")
-def reset(repo: repos.PackageRepo = Depends(deps.get_repo),
-          user=Depends(deps.require_admin)):
-    repo.reset()
-    # recreate default admin
-    pwd = "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages"
-    repo.upsert_user("ece30861defaultadminuser", hash_password(pwd), "admin")
-    return {"ok": True}
+DEFAULT_ADMIN_USER = "ece30861defaultadminuser"
+DEFAULT_ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "ChangeMe!123")  # <= 72 chars
 
 @router.post("/bootstrap")
-def bootstrap(repo: repos.PackageRepo = Depends(deps.get_repo)):
-    # Allow seeding ONLY if there are no users yet
-    if repo.user_count() > 0:
-        return {"ok": False, "note": "already initialized"}
-    pwd = "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages"
-    repo.upsert_user("ece30861defaultadminuser", hash_password(pwd), "admin")
-    return {"ok": True}
+def bootstrap():
+    repo = repos.get_repo()
+    if repo.get_user(DEFAULT_ADMIN_USER):
+        return {"detail": "already-initialized"}
+    repo.upsert_user(DEFAULT_ADMIN_USER, hash_password(DEFAULT_ADMIN_PASS), "admin")
+    return {"detail": "initialized"}

@@ -25,5 +25,7 @@ logs/
 .vscode
 .tokens
 
-# in model-hub-cli/.gitignore
+# service secrets & local data
 service/.env
+service/data
+*.db
