@@ -24,3 +24,6 @@ logs/
 # IDE Data
 .vscode
 .tokens
+
+# in model-hub-cli/.gitignore
+service/.env

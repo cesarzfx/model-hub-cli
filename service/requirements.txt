@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+python-jose[cryptography]==3.3.0 ; sys_platform=="never"  # if you choose jose
+PyJWT==2.9.0
+passlib[bcrypt]
+requests
+boto3
+packaging
