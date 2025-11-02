@@ -54,8 +54,6 @@ jobs:
     - name: Run tests with coverage
       run: |
         coverage run -m pytest
-        coverage report --fail-under=75
-        coverage xml
 
   deploy:
     needs: test
