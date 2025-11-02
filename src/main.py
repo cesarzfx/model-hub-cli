@@ -1,11 +1,19 @@
 """
 main.py
 =======
-CLI entry point for the Model Hub evaluation tool.
+CLI entry point for the Model Hub evaluation tool and AWS Lambda handler.
 
+This script serves two purposes:
+1. CLI tool for model evaluation
+2. AWS Lambda handler for serverless API
+
+For CLI usage:
 This script reads a CSV-style input file where each line includes up to three URLs
 (model, code, dataset — in any order). It validates and classifies the URLs, evaluates
 each model using a fixed set of metrics, and prints results to STDOUT in NDJSON format.
+
+For Lambda usage:
+The script provides a handler that returns a simple health check response.
 
 Responsibilities
 ----------------
@@ -13,6 +21,7 @@ Responsibilities
 - Parse and classify URLs from the input file.
 - Coordinate evaluation via the `ModelCatalogue` class.
 - Output one NDJSON object per model to STDOUT.
+- Serve as AWS Lambda handler.
 
 Expected Input Format
 ---------------------
@@ -190,3 +199,13 @@ if __name__ == "__main__":
         print("Usage: run <absolute_path_to_input_file>")
         sys.exit(1)
     sys.exit(run_catalogue(sys.argv[1]))
+
+def lambda_handler(event, context):
+    """AWS Lambda handler function."""
+    return {
+        'statusCode': 200,
+        'body': 'ok',
+        'headers': {
+            'Content-Type': 'text/plain'
+        }
+    }

@@ -1,11 +1,15 @@
-name: Model Hub CLI CI
+name: Model Hub CLI CI/CD
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: 
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   test:
@@ -54,3 +58,39 @@ jobs:
         file: ./coverage.xml
         fail_ci_if_error: true
         verbose: true
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install aws-sam-cli
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+        aws-region: us-east-1
+
+    - name: SAM build
+      run: sam build --use-container
+
+    - name: SAM deploy
+      run: |
+        sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+          --stack-name model-hub-api \
+          --parameter-overrides Environment=prod \
+          --capabilities CAPABILITY_IAM
