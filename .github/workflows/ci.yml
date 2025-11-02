@@ -53,7 +53,7 @@ jobs:
         coverage xml
 
   deploy:
-    
+    needs: test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     
