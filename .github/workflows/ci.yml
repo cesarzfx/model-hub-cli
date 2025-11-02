@@ -78,7 +78,7 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v3
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
-        aws-region: us-east-1
+        aws-region: us-east-2
 
     - name: SAM build
       run: sam build --use-container
