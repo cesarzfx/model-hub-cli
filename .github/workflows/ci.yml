@@ -84,8 +84,6 @@ jobs:
 
     - name: SAM build
       run: |
-        # Copy requirements.txt to src/ so SAM picks up dependencies
-        cp requirements.txt src/requirements.txt
         sam build --use-container
 
     - name: SAM deploy
