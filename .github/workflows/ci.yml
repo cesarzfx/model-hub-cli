@@ -42,6 +42,11 @@ jobs:
         pip install black
         black --check src/ tests/
     
+    - name: Install runtime dependencies and type stubs
+      run: |
+        pip install fastapi pyyaml pyjwt uvicorn
+        pip install types-PyYAML types-requests
+
     - name: Type check with mypy
       run: |
         mypy src/
