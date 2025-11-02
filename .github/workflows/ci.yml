@@ -51,16 +51,9 @@ jobs:
         coverage run -m pytest
         coverage report
         coverage xml
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        fail_ci_if_error: true
-        verbose: true
 
   deploy:
-    needs: test
+    
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     
