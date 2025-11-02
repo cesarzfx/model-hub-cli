@@ -23,7 +23,7 @@ app.include_router(reset_router)
 
 
 # Add API Key security scheme to OpenAPI docs and apply globally to all endpoints
-def custom_openapi():
+def custom_openapi() -> dict:
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(

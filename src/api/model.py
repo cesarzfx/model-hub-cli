@@ -17,15 +17,15 @@ class ModelRating(BaseModel):
 
 
 @router.get("/artifact/model/{id}/rate")
-def rate_model(id: str):
+def rate_model(id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.get("/artifact/model/{id}/lineage")
-def get_lineage(id: str):
+def get_lineage(id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.post("/artifact/model/{id}/license-check")
-def license_check(id: str):
+def license_check(id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")

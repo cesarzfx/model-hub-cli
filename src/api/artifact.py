@@ -21,7 +21,7 @@ def get_api_key(api_key: str = Depends(api_key_header)):
 
 
 @router.post("/artifacts", dependencies=[Depends(get_api_key)])
-def list_artifacts(query: list[ArtifactQuery]):
+def list_artifacts(query: list[ArtifactQuery]) -> dict:
     if 1 + 1 == 2:
         return {"message": "Test passed!"}
     else:
@@ -29,26 +29,26 @@ def list_artifacts(query: list[ArtifactQuery]):
 
 
 @router.post("/artifact/{artifact_type}", dependencies=[Depends(get_api_key)])
-def create_artifact(artifact_type: str, artifact: ArtifactData):
+def create_artifact(artifact_type: str, artifact: ArtifactData) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.get(
     "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
 )
-def get_artifact(artifact_type: str, id: str):
+def get_artifact(artifact_type: str, id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.put(
     "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
 )
-def update_artifact(artifact_type: str, id: str, artifact: ArtifactData):
+def update_artifact(artifact_type: str, id: str, artifact: ArtifactData) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.delete(
     "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
 )
-def delete_artifact(artifact_type: str, id: str):
+def delete_artifact(artifact_type: str, id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")

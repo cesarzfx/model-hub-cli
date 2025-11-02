@@ -4,5 +4,5 @@ router = APIRouter()
 
 
 @router.delete("/reset")
-def reset_registry():
+def reset_registry() -> None:
     raise HTTPException(status_code=501, detail="Not implemented")

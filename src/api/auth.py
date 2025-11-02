@@ -15,7 +15,7 @@ class AuthRequest(BaseModel):
 
 
 @router.put("/authenticate")
-def authenticate(auth: AuthRequest):
+def authenticate(auth: AuthRequest) -> dict:
     # Dummy authentication: accept any user/secret
     to_encode = {"sub": auth.user}
     expires = datetime.utcnow() + timedelta(minutes=30)
