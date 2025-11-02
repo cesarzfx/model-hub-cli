@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta
@@ -8,9 +8,11 @@ router = APIRouter()
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 
+
 class AuthRequest(BaseModel):
     user: str
     secret: str
+
 
 @router.put("/authenticate")
 def authenticate(auth: AuthRequest):

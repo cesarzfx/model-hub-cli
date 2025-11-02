@@ -87,7 +87,8 @@ class CodeQualityMetric(Metric):
         if not clone_url:
             total = popularity_score + commit_score
             logger.info(
-                "CodeQualityMetric: No clone URL, returning base score {:.3f}", total
+                "CodeQualityMetric: No clone URL, returning base score {:.3f}",
+                total,
             )
             return min(total, 1.0)
 
@@ -95,13 +96,19 @@ class CodeQualityMetric(Metric):
             with tempfile.TemporaryDirectory() as temp_dir:
                 if self._clone_repository(clone_url, temp_dir):
                     test_score, doc_score = self._clone_and_analyze(temp_dir)
-                    total = popularity_score + commit_score + test_score + doc_score
+                    total = (
+                        popularity_score
+                        + commit_score
+                        + test_score
+                        + doc_score
+                    )
                     logger.info("Popularity Score: {:.3f}", popularity_score)
                     logger.info("Total Commits Score: {:.3f}", commit_score)
                     logger.info("Test Score: {:.3f}", test_score)
                     logger.info("Documentation Score: {:.3f}", doc_score)
                     logger.info(
-                        "CodeQualityMetric: Full analysis score → {:.3f}", total
+                        "CodeQualityMetric: Full analysis score → {:.3f}",
+                        total,
                     )
                     return min(total, 1.0)
                 else:
@@ -135,7 +142,9 @@ class CodeQualityMetric(Metric):
         # Linear scale: 0.001 points per commit, maxing out at 0.3 for 300 commits
         score = min(total_commits * 0.001, 0.3)
 
-        logger.debug("Total commits: {} → commit score: {:.3f}", total_commits, score)
+        logger.debug(
+            "Total commits: {} → commit score: {:.3f}", total_commits, score
+        )
         return score
 
     def _clone_repository(self, clone_url: str, temp_dir: str) -> bool:
@@ -261,7 +270,9 @@ class CodeQualityMetric(Metric):
             score += 0.05
             found_docs.append("LICENSE")
 
-        if any(Path(repo_path).glob("README*")) or any(Path(repo_path).glob("readme*")):
+        if any(Path(repo_path).glob("README*")) or any(
+            Path(repo_path).glob("readme*")
+        ):
             score += 0.05
             found_docs.append("README")
 

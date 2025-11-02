@@ -35,7 +35,9 @@ class TestDatasetQualityMetric:
 
     @pytest.fixture(autouse=True)
     def patch_requests_post(self) -> Iterator[Mock]:
-        with patch("src.metrics.DatasetQualityMetric.requests.post") as mock_post:
+        with patch(
+            "src.metrics.DatasetQualityMetric.requests.post"
+        ) as mock_post:
             yield mock_post
 
     # --- Tests ---
@@ -49,7 +51,9 @@ class TestDatasetQualityMetric:
         # Mock successful API response
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"choices": [{"message": {"content": "0.8"}}]}
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "0.8"}}]
+        }
         patch_requests_post.return_value = mock_response
 
         score = metric.evaluate(model_with_dataset_metadata)
@@ -90,7 +94,9 @@ class TestDatasetQualityMetric:
         score = metric.evaluate(model_with_dataset_metadata)
         assert score == 0.0
 
-    def test_parse_score_valid_float(self, metric: DatasetQualityMetric) -> None:
+    def test_parse_score_valid_float(
+        self, metric: DatasetQualityMetric
+    ) -> None:
         assert metric._parse_score("0.75") == 0.75
         assert metric._parse_score("0.0") == 0.0
         assert metric._parse_score("1.0") == 1.0
@@ -99,7 +105,9 @@ class TestDatasetQualityMetric:
         assert metric._parse_score("7.5") == 0.75
         assert metric._parse_score("10") == 1.0
 
-    def test_parse_score_out_of_100(self, metric: DatasetQualityMetric) -> None:
+    def test_parse_score_out_of_100(
+        self, metric: DatasetQualityMetric
+    ) -> None:
         assert metric._parse_score("75") == 0.75
         assert metric._parse_score("100") == 1.0
 
@@ -123,7 +131,9 @@ class TestDatasetQualityMetric:
 
     def test_no_api_key_warning(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            with patch("src.metrics.DatasetQualityMetric.logger") as mock_logger:
+            with patch(
+                "src.metrics.DatasetQualityMetric.logger"
+            ) as mock_logger:
                 metric = DatasetQualityMetric()
                 mock_logger.warning.assert_called_once()
                 assert metric.api_key is None

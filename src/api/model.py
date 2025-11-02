@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+
 class ModelRating(BaseModel):
     name: str
     bus_factor_score: float
@@ -14,13 +15,16 @@ class ModelRating(BaseModel):
     pull_request_score: float
     net_score: float
 
+
 @router.get("/artifact/model/{id}/rate")
 def rate_model(id: str):
     raise HTTPException(status_code=501, detail="Not implemented")
 
+
 @router.get("/artifact/model/{id}/lineage")
 def get_lineage(id: str):
     raise HTTPException(status_code=501, detail="Not implemented")
+
 
 @router.post("/artifact/model/{id}/license-check")
 def license_check(id: str):

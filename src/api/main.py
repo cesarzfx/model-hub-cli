@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 import yaml
 from src.api.auth import router as auth_router
@@ -8,13 +7,13 @@ from src.api.reset import router as reset_router
 from fastapi.openapi.utils import get_openapi
 
 # Load the OpenAPI spec
-with open('ece461_fall_2025_openapi_spec.yaml', 'r') as f:
+with open("ece461_fall_2025_openapi_spec.yaml", "r") as f:
     openapi_spec = yaml.safe_load(f)
 
 app = FastAPI(
-    title=openapi_spec['info']['title'],
-    description=openapi_spec['info']['description'],
-    version=openapi_spec['info']['version']
+    title=openapi_spec["info"]["title"],
+    description=openapi_spec["info"]["description"],
+    version=openapi_spec["info"]["version"],
 )
 
 app.include_router(auth_router)
@@ -37,7 +36,7 @@ def custom_openapi():
         "ApiKeyAuth": {
             "type": "apiKey",
             "in": "header",
-            "name": "X-Authorization"
+            "name": "X-Authorization",
         }
     }
     # Apply security to all paths
@@ -47,8 +46,10 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+
 app.openapi = custom_openapi
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

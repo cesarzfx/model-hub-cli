@@ -72,7 +72,9 @@ class LicenseMetric(Metric):
         if hf_meta:
             license_id = hf_meta.get("cardData", {}).get("license", "unknown")
             if license_id and license_id != "unknown":
-                logger.debug("License found in HuggingFace metadata: {}", license_id)
+                logger.debug(
+                    "License found in HuggingFace metadata: {}", license_id
+                )
 
         # Step 2: Fallback to GitHub if needed
         if license_id == "unknown":
@@ -80,11 +82,15 @@ class LicenseMetric(Metric):
             if gh_meta:
                 license_id = gh_meta.get("license", "unknown")
                 if license_id and license_id != "unknown":
-                    logger.debug("License found in GitHub metadata: {}", license_id)
+                    logger.debug(
+                        "License found in GitHub metadata: {}", license_id
+                    )
 
         # Step 3: Map to score
         license_key = license_id.lower() if license_id else "unknown"
         license_score = self.LICENSE_COMPATIBILITY.get(license_key, 0.5)
 
-        logger.debug("LicenseMetric: '{}' → score {}", license_key, license_score)
+        logger.debug(
+            "LicenseMetric: '{}' → score {}", license_key, license_score
+        )
         return license_score

@@ -83,7 +83,9 @@ def computeNetScore(self) -> float:
     code_qual_score = self.evaluations.get("CodeQualityMetric", 0.0) or 0.0
     perf_score = self.evaluations.get("PerformanceClaimsMetric", 0.0) or 0.0
 
-    avg_size_score = sum(size_score.values()) / len(size_score) if size_score else 0.0
+    avg_size_score = (
+        sum(size_score.values()) / len(size_score) if size_score else 0.0
+    )
 
     weighted_sum = (
         0.2 * avg_size_score

@@ -56,7 +56,11 @@ from loguru import logger
 
 from src.Metric import Metric
 from src.ModelData import ModelData
-from src.util.metadata_fetchers import DatasetFetcher, GitHubFetcher, HuggingFaceFetcher
+from src.util.metadata_fetchers import (
+    DatasetFetcher,
+    GitHubFetcher,
+    HuggingFaceFetcher,
+)
 
 
 class Model(ModelData):
@@ -129,9 +133,7 @@ class Model(ModelData):
     def evaluate_all(self, metrics: List[Metric]) -> None:
         def evaluate_metric(
             metric: Metric,
-        ) -> Tuple[
-            Metric, Union[float, Dict[str, float]], float
-        ]:
+        ) -> Tuple[Metric, Union[float, Dict[str, float]], float]:
             start = time.time()
             score = metric.evaluate(self)
             latency = time.time() - start
@@ -159,7 +161,9 @@ class Model(ModelData):
                 if isinstance(val, dict) and val:
                     return sum(val.values()) / len(val)
                 else:
-                    logger.warning(f"SizeMetric score is not a valid dict: {val}")
+                    logger.warning(
+                        f"SizeMetric score is not a valid dict: {val}"
+                    )
                     return 0.0
             else:
                 if isinstance(val, dict):

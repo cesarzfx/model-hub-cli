@@ -1,5 +1,9 @@
 from unittest.mock import MagicMock
-from src.util.metadata_fetchers import HuggingFaceFetcher, GitHubFetcher, DatasetFetcher
+from src.util.metadata_fetchers import (
+    HuggingFaceFetcher,
+    GitHubFetcher,
+    DatasetFetcher,
+)
 
 
 # HuggingFaceFetcher Tests
@@ -201,7 +205,9 @@ def test_dataset_fetcher_invalid_url_missing_datasets_segment():
     fetcher = DatasetFetcher(session=session)
 
     # Path missing 'datasets' segment at start
-    metadata = fetcher.fetch_metadata("https://huggingface.co/xlangai/AgentNet")
+    metadata = fetcher.fetch_metadata(
+        "https://huggingface.co/xlangai/AgentNet"
+    )
     assert metadata == {}
     session.get.assert_not_called()
 
@@ -211,7 +217,9 @@ def test_dataset_fetcher_non_huggingface_url():
     fetcher = DatasetFetcher(session=session)
 
     # Domain not huggingface.co
-    metadata = fetcher.fetch_metadata("https://example.com/datasets/org/dataset")
+    metadata = fetcher.fetch_metadata(
+        "https://example.com/datasets/org/dataset"
+    )
     assert metadata == {}
     session.get.assert_not_called()
 
@@ -232,7 +240,9 @@ def test_dataset_fetcher_http_failure():
     session.get.return_value = mock_response
 
     fetcher = DatasetFetcher(session=session)
-    metadata = fetcher.fetch_metadata("https://huggingface.co/datasets/org/dataset")
+    metadata = fetcher.fetch_metadata(
+        "https://huggingface.co/datasets/org/dataset"
+    )
 
     assert metadata == {}
     session.get.assert_called_once()

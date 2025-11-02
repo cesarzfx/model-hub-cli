@@ -57,7 +57,9 @@ class RampUpMetric(Metric):
         logger.debug(f"Ramp Up Time Metric score: {score}")
         return score
 
-    def _extract_relevant_sections(self, readme: str, max_chars: int = 8000) -> str:
+    def _extract_relevant_sections(
+        self, readme: str, max_chars: int = 8000
+    ) -> str:
         """
         Extract key sections from a long README to prepare a concise,
         high-signal LLM prompt.
@@ -100,4 +102,6 @@ class RampUpMetric(Metric):
             return readme[:max_chars] + "\n..."
 
         combined = "\n\n".join(extracted_sections.values())
-        return combined[:max_chars] + ("\n..." if len(combined) > max_chars else "")
+        return combined[:max_chars] + (
+            "\n..." if len(combined) > max_chars else ""
+        )
