@@ -14,7 +14,7 @@ class ArtifactQuery(BaseModel):
     name: str
 
 
-def get_api_key(api_key: str = Depends(api_key_header)):
+def get_api_key(api_key: str = Depends(api_key_header)) -> str:
     if not api_key or api_key != "password123":
         raise HTTPException(status_code=403, detail="Not authenticated")
     return api_key
