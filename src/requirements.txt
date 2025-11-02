@@ -1,3 +1,0 @@
-requests
-loguru
-# Add any other runtime dependencies here
