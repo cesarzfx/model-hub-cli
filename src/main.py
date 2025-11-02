@@ -206,7 +206,9 @@ if __name__ == "__main__":
 def lambda_handler(event, context):
     """AWS Lambda handler function."""
     return {
-        "statusCode": 200,
-        "body": "ok",
-        "headers": {"Content-Type": "text/plain"},
+        'statusCode': 200,
+        'body': 'ok',
+        'headers': {
+            'Content-Type': 'text/plain'
+        }
     }
