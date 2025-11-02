@@ -113,9 +113,7 @@ class TestCodeQualityMetric(BaseMetricTest):
 
         assert result is False
 
-    def test_calculate_popularity_score(
-        self, metric: CodeQualityMetric
-    ) -> None:
+    def test_calculate_popularity_score(self, metric: CodeQualityMetric) -> None:
         logger.info("Testing popularity score calculation...")
 
         # High stars and forks
@@ -253,13 +251,9 @@ class TestCodeQualityMetric(BaseMetricTest):
         }
 
         # Mock successful clone and high analysis scores
-        with patch.object(
-            metric, "_clone_repository", return_value=True
-        ), patch.object(
+        with patch.object(metric, "_clone_repository", return_value=True), patch.object(
             metric, "_evaluate_testing_quality", return_value=0.5
-        ), patch.object(
-            metric, "_evaluate_documentation", return_value=0.5
-        ):
+        ), patch.object(metric, "_evaluate_documentation", return_value=0.5):
 
             score = metric.evaluate(model)
             assert score == 1.0  # Should be capped at 1.0

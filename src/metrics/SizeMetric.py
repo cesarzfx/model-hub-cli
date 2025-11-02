@@ -190,10 +190,7 @@ class SizeMetric(Metric):
                 # Check quantization config for bits field
                 if "quantization_config" in config:
                     quant_config = config["quantization_config"]
-                    if (
-                        isinstance(quant_config, dict)
-                        and "bits" in quant_config
-                    ):
+                    if isinstance(quant_config, dict) and "bits" in quant_config:
                         bits = quant_config["bits"]
                         bytes_per_param = bits / 8
                         logger.debug(
@@ -218,24 +215,14 @@ class SizeMetric(Metric):
                 # Prefer "total" field, fallback to first parameter type
                 if "total" in safetensors:
                     param_count = safetensors["total"]
-                    if (
-                        isinstance(param_count, (int, float))
-                        and param_count > 0
-                    ):
-                        logger.debug(
-                            f"Params: {param_count:,} at safetensors.total"
-                        )
+                    if isinstance(param_count, (int, float)) and param_count > 0:
+                        logger.debug(f"Params: {param_count:,} at safetensors.total")
                         return int(param_count)
                 elif "parameters" in safetensors and safetensors["parameters"]:
                     # Get first value in parameters dict
                     param_count = list(safetensors["parameters"].values())[0]
-                    if (
-                        isinstance(param_count, (int, float))
-                        and param_count > 0
-                    ):
-                        logger.debug(
-                            f"Params: {param_count:,} safetensors.parameters"
-                        )
+                    if isinstance(param_count, (int, float)) and param_count > 0:
+                        logger.debug(f"Params: {param_count:,} safetensors.parameters")
                         return int(param_count)
 
             # Check config
@@ -252,9 +239,7 @@ class SizeMetric(Metric):
                     "params",
                     "n_params",
                 ]:
-                    if field in config and isinstance(
-                        config[field], (int, float)
-                    ):
+                    if field in config and isinstance(config[field], (int, float)):
                         param_count = int(config[field])
                         if param_count and param_count > 0:
                             logger.debug(
@@ -273,9 +258,7 @@ class SizeMetric(Metric):
                 "params",
                 "n_params",
             ]:
-                if field in metadata and isinstance(
-                    metadata[field], (int, float)
-                ):
+                if field in metadata and isinstance(metadata[field], (int, float)):
                     param_count = int(metadata[field])
                     if param_count > 0:
                         logger.debug(

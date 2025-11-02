@@ -148,9 +148,7 @@ def run_catalogue(file_path: str) -> int:
                     return 1
 
                 try:
-                    catalogue.addModel(
-                        Model([code_url, dataset_url, model_url])
-                    )
+                    catalogue.addModel(Model([code_url, dataset_url, model_url]))
                 except Exception as e:
                     logger.error(f"Error processing line {line_num}: {e}")
                     return 1
@@ -205,10 +203,4 @@ if __name__ == "__main__":
 
 def lambda_handler(event: dict, context: object) -> dict:
     """AWS Lambda handler function."""
-    return {
-        'statusCode': 200,
-        'body': 'ok',
-        'headers': {
-            'Content-Type': 'text/plain'
-        }
-    }
+    return {"statusCode": 200, "body": "ok", "headers": {"Content-Type": "text/plain"}}

@@ -60,13 +60,9 @@ class DatasetQualityMetric(Metric):
     def __init__(self) -> None:
         self.api_key: Optional[str] = os.getenv("GEN_AI_STUDIO_API_KEY")
         if not self.api_key:
-            logger.warning(
-                "GEN_AI_STUDIO_API_KEY not found in environment variables"
-            )
+            logger.warning("GEN_AI_STUDIO_API_KEY not found in environment variables")
 
-        self.api_url: str = (
-            "https://genai.rcac.purdue.edu/api/chat/completions"
-        )
+        self.api_url: str = "https://genai.rcac.purdue.edu/api/chat/completions"
         self.headers: Dict[str, str] = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -80,9 +76,7 @@ class DatasetQualityMetric(Metric):
         try:
             # Get dataset metadata
             if not model.dataset_metadata:
-                logger.warning(
-                    f"No dataset metadata available for {model.datasetLink}"
-                )
+                logger.warning(f"No dataset metadata available for {model.datasetLink}")
                 return 0.0
 
             # Generate LLM prompt
@@ -134,9 +128,7 @@ No explanation needed.
                 "stream": False,  # We want a complete response, not streaming
             }
 
-            response = requests.post(
-                self.api_url, headers=self.headers, json=body
-            )
+            response = requests.post(self.api_url, headers=self.headers, json=body)
 
             if response.status_code != 200:
                 logger.error(
@@ -147,13 +139,8 @@ No explanation needed.
             response_data: Dict[str, Any] = response.json()
 
             # Extract the content from the response
-            if (
-                "choices" in response_data
-                and len(response_data["choices"]) > 0
-            ):
-                content: str = response_data["choices"][0]["message"][
-                    "content"
-                ].strip()
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                content: str = response_data["choices"][0]["message"]["content"].strip()
 
                 # Try to parse the score from the response
                 score: Optional[float] = self._parse_score(content)

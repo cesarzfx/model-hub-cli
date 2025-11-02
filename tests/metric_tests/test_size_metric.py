@@ -49,9 +49,7 @@ class TestSizeMetric:
         )
         assert all(0.0 <= score <= 1.0 for score in scores.values())
 
-    def test_evaluate_no_metadata(
-        self, metric: SizeMetric, mock_model: Mock
-    ) -> None:
+    def test_evaluate_no_metadata(self, metric: SizeMetric, mock_model: Mock) -> None:
         """Test evaluation with model that has no metadata."""
         mock_model.hf_metadata = None
         scores = metric.evaluate(mock_model)
@@ -64,9 +62,7 @@ class TestSizeMetric:
         }
         assert scores == expected
 
-    def test_evaluate_large_model(
-        self, metric: SizeMetric, mock_model: Mock
-    ) -> None:
+    def test_evaluate_large_model(self, metric: SizeMetric, mock_model: Mock) -> None:
         """Test evaluation with very large model."""
         mock_model.hf_metadata = {"config": {"num_parameters": 70_000_000_000}}
         scores = metric.evaluate(mock_model)
@@ -76,9 +72,7 @@ class TestSizeMetric:
         # Large devices might still have some score
         assert scores["aws_server"] >= 0.0
 
-    def test_evaluate_tiny_model(
-        self, metric: SizeMetric, mock_model: Mock
-    ) -> None:
+    def test_evaluate_tiny_model(self, metric: SizeMetric, mock_model: Mock) -> None:
         """Test evaluation with very small model."""
         mock_model.hf_metadata = {"config": {"num_parameters": 100_000_000}}
         scores = metric.evaluate(mock_model)
@@ -169,21 +163,15 @@ class TestSizeMetric:
     ) -> None:
         """Test dtype extraction from torch_dtype field."""
         metadata = (
-            {"config": {"torch_dtype": torch_dtype}}
-            if torch_dtype
-            else {"config": {}}
+            {"config": {"torch_dtype": torch_dtype}} if torch_dtype else {"config": {}}
         )
 
         assert metric._extract_bytes_from_dtype(metadata) == expected_bytes
 
-    def test_extract_bytes_quantization_precedence(
-        self, metric: SizeMetric
-    ) -> None:
+    def test_extract_bytes_quantization_precedence(self, metric: SizeMetric) -> None:
         """Test dtype extraction precedence and quantization."""
         # Quantization only
-        metadata: dict[str, Any] = {
-            "config": {"quantization_config": {"bits": 4}}
-        }
+        metadata: dict[str, Any] = {"config": {"quantization_config": {"bits": 4}}}
         assert metric._extract_bytes_from_dtype(metadata) == 0.5
 
         # torch_dtype takes precedence over quantization
@@ -197,9 +185,7 @@ class TestSizeMetric:
 
     # --- Tests for _get_parameter_count() ---
 
-    def test_get_parameter_count_config_fields(
-        self, metric: SizeMetric
-    ) -> None:
+    def test_get_parameter_count_config_fields(self, metric: SizeMetric) -> None:
         """Test parameter extraction from various config fields."""
         test_cases = [
             ({"config": {"num_parameters": 1_500_000_000}}, 1_500_000_000),
@@ -218,22 +204,15 @@ class TestSizeMetric:
     def test_get_parameter_count_edge_cases(self, metric: SizeMetric) -> None:
         """Test parameter extraction edge cases."""
         # Invalid values
+        assert metric._get_parameter_count({"config": {"num_parameters": -1}}) is None
         assert (
-            metric._get_parameter_count({"config": {"num_parameters": -1}})
-            is None
-        )
-        assert (
-            metric._get_parameter_count(
-                {"config": {"num_parameters": "invalid"}}
-            )
+            metric._get_parameter_count({"config": {"num_parameters": "invalid"}})
             is None
         )
 
         # No valid fields
         assert (
-            metric._get_parameter_count(
-                {"config": {"model_type": "transformer"}}
-            )
+            metric._get_parameter_count({"config": {"model_type": "transformer"}})
             is None
         )
         assert metric._get_parameter_count({"other_field": "value"}) is None
@@ -280,9 +259,7 @@ class TestSizeMetric:
         model_size_gb = 1.0
 
         for device, memory in metric.DEVICE_SPECS.items():
-            expected_score = max(
-                0.0, min(1.0, (memory - model_size_gb) / memory)
-            )
+            expected_score = max(0.0, min(1.0, (memory - model_size_gb) / memory))
             actual_score = (memory - model_size_gb) / memory
             actual_score = max(0.0, min(1.0, actual_score))
             assert actual_score == expected_score
@@ -291,9 +268,7 @@ class TestSizeMetric:
         """Test device scoring at memory boundaries."""
         for device, memory_limit in metric.DEVICE_SPECS.items():
             # At limit: score = 0
-            score = max(
-                0.0, min(1.0, (memory_limit - memory_limit) / memory_limit)
-            )
+            score = max(0.0, min(1.0, (memory_limit - memory_limit) / memory_limit))
             assert score == 0.0
 
             # Over limit: score = 0

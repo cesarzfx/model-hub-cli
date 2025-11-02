@@ -89,9 +89,7 @@ def intercept_loguru_logs(caplog):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
-    logging.basicConfig(
-        level=logging.DEBUG
-    )  # ensure root logger handles all messages
+    logging.basicConfig(level=logging.DEBUG)  # ensure root logger handles all messages
     logger.remove()  # remove default loguru handlers
     logger.add(PropagateHandler(), level="DEBUG")
     yield

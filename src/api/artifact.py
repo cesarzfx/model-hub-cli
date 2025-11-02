@@ -33,22 +33,16 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
-@router.get(
-    "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
-)
+@router.get("/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)])
 def get_artifact(artifact_type: str, id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
-@router.put(
-    "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
-)
+@router.put("/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)])
 def update_artifact(artifact_type: str, id: str, artifact: ArtifactData) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
-@router.delete(
-    "/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)]
-)
+@router.delete("/artifact/{artifact_type}/{id}", dependencies=[Depends(get_api_key)])
 def delete_artifact(artifact_type: str, id: str) -> None:
     raise HTTPException(status_code=501, detail="Not implemented")

@@ -161,9 +161,7 @@ class Model(ModelData):
                 if isinstance(val, dict) and val:
                     return sum(val.values()) / len(val)
                 else:
-                    logger.warning(
-                        f"SizeMetric score is not a valid dict: {val}"
-                    )
+                    logger.warning(f"SizeMetric score is not a valid dict: {val}")
                     return 0.0
             else:
                 if isinstance(val, dict):

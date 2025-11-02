@@ -111,18 +111,12 @@ class HuggingFaceFetcher(MetadataFetcher):
 
         # Fetch README.md
         try:
-            readme_path = hf_hub_download(
-                repo_id=repo_id, filename="README.md"
-            )
+            readme_path = hf_hub_download(repo_id=repo_id, filename="README.md")
             with open(readme_path, "r", encoding="utf-8") as f:
                 metadata["readme"] = f.read()
-                logger.debug(
-                    "Successfully fetched README.md from Hugging Face"
-                )
+                logger.debug("Successfully fetched README.md from Hugging Face")
         except Exception as e:
-            logger.warning(
-                f"Failed to fetch README.md via huggingface_hub: {e}"
-            )
+            logger.warning(f"Failed to fetch README.md via huggingface_hub: {e}")
 
         # Fetch model_index.json
         try:
@@ -131,13 +125,9 @@ class HuggingFaceFetcher(MetadataFetcher):
             )
             with open(model_index_path, "r", encoding="utf-8") as f:
                 metadata["model_index"] = f.read()
-                logger.debug(
-                    "Successfully fetched model_index.json from Hugging Face"
-                )
+                logger.debug("Successfully fetched model_index.json from Hugging Face")
         except Exception as e:
-            logger.warning(
-                f"Failed to fetch model_index.json via huggingface_hub: {e}"
-            )
+            logger.warning(f"Failed to fetch model_index.json via huggingface_hub: {e}")
 
         return metadata
 
@@ -183,15 +173,9 @@ class GitHubFetcher(MetadataFetcher):
 
         try:
             # Fetch contributors
-            contributors_url = (
-                f"{self.BASE_API_URL}/{owner}/{repo}/contributors"
-            )
-            logger.debug(
-                f"Fetching GitHub contributors from: {contributors_url}"
-            )
-            resp = self.session.get(
-                contributors_url, headers=headers, timeout=5
-            )
+            contributors_url = f"{self.BASE_API_URL}/{owner}/{repo}/contributors"
+            logger.debug(f"Fetching GitHub contributors from: {contributors_url}")
+            resp = self.session.get(contributors_url, headers=headers, timeout=5)
             if resp.ok:
                 metadata["contributors"] = resp.json()
             else:
@@ -218,9 +202,7 @@ class GitHubFetcher(MetadataFetcher):
             if resp.ok:
                 repo_data = resp.json()
                 metadata["clone_url"] = repo_data.get("clone_url")
-                metadata["stargazers_count"] = repo_data.get(
-                    "stargazers_count", 0
-                )
+                metadata["stargazers_count"] = repo_data.get("stargazers_count", 0)
                 metadata["forks_count"] = repo_data.get("forks_count", 0)
             else:
                 logger.warning(
@@ -232,9 +214,7 @@ class GitHubFetcher(MetadataFetcher):
             commits_url = f"{self.BASE_API_URL}/{owner}/{repo}/commits"
             logger.debug(f"Fetching GitHub commits from: {commits_url}")
             params = {"per_page": 100}
-            commits_resp = self.session.get(
-                commits_url, params=params, headers=headers
-            )
+            commits_resp = self.session.get(commits_url, params=params, headers=headers)
             if commits_resp.ok:
                 commits = commits_resp.json()
                 metadata["commits_count"] = len(commits)

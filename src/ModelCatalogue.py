@@ -114,21 +114,15 @@ class ModelCatalogue:
             "bus_factor": model.getScore("BusFactorMetric"),
             "bus_factor_latency": model.getLatency("BusFactorMetric"),
             "performance_claims": model.getScore("PerformanceClaimsMetric"),
-            "performance_claims_latency": model.getLatency(
-                "PerformanceClaimsMetric"
-            ),
+            "performance_claims_latency": model.getLatency("PerformanceClaimsMetric"),
             "license": model.getScore("LicenseMetric"),
             "license_latency": model.getLatency("LicenseMetric"),
             "size_score": model.getScore("SizeMetric", {}),  # may be dict
             "size_score_latency": model.getLatency("SizeMetric"),
             "dataset_and_code_score": model.getScore("AvailabilityMetric"),
-            "dataset_and_code_score_latency": model.getLatency(
-                "AvailabilityMetric"
-            ),
+            "dataset_and_code_score_latency": model.getLatency("AvailabilityMetric"),
             "dataset_quality": model.getScore("DatasetQualityMetric"),
-            "dataset_quality_latency": model.getLatency(
-                "DatasetQualityMetric"
-            ),
+            "dataset_quality_latency": model.getLatency("DatasetQualityMetric"),
             "code_quality": model.getScore("CodeQualityMetric"),
             "code_quality_latency": model.getLatency("CodeQualityMetric"),
         }

@@ -81,9 +81,7 @@ class BusFactorMetric(Metric):
                 or hf_metadata.get("id", "").split("/")[0]
                 or ""
             )
-        logger.debug(
-            "Extracted author from HuggingFace metadata: '{}'", author
-        )
+        logger.debug("Extracted author from HuggingFace metadata: '{}'", author)
 
         # Return full score if author is a large company
         author = author.lower()
@@ -128,9 +126,7 @@ class BusFactorMetric(Metric):
             distribution_score = min_contrib / max_contrib  # between 0 and 1
 
         # Cap max score based on contributor count
-        max_score = (
-            min(num_contribs, self.MAX_TOP_CONTRIBS) * self.SCORE_PER_CONTRIB
-        )
+        max_score = min(num_contribs, self.MAX_TOP_CONTRIBS) * self.SCORE_PER_CONTRIB
 
         # Final score: scale distribution_score by max_score
         score = distribution_score * max_score
