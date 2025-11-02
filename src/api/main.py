@@ -47,7 +47,7 @@ def custom_openapi() -> dict:
     return app.openapi_schema
 
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # type: ignore[assignment]
 
 if __name__ == "__main__":
     import uvicorn
