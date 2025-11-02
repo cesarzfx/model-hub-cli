@@ -106,7 +106,10 @@ jobs:
         aws-region: us-east-2
 
     - name: SAM build
-      run: sam build --use-container
+      run: |
+        # Copy requirements.txt to src/ so SAM picks up dependencies
+        cp requirements.txt src/requirements.txt
+        sam build --use-container
 
     - name: SAM deploy
       run: |
