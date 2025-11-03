@@ -81,6 +81,8 @@ jobs:
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
         aws-region: us-east-2
+    - name: Copy requirements.txt for SAM
+      run: cp requirements.txt src/requirements.txt
 
     - name: SAM build
       run: |
