@@ -1,7 +1,6 @@
 from typing import Any, Dict
 from mangum import Mangum
-from api.main import app
-
+from src.api.main import app
 
 handler = Mangum(app)
 
