@@ -28,8 +28,8 @@ Resources:
         ApiEvent:
           Type: HttpApi
           Properties:
-            Path: /
-            Method: GET
+            Path: /{proxy+}
+            Method: ANY
 
   ModelHubApi:
     Type: AWS::Serverless::HttpApi
@@ -37,7 +37,7 @@ Resources:
       StageName: $default
       CorsConfiguration:
         AllowMethods:
-          - GET
+          - '*'
         AllowHeaders:
           - '*'
         AllowOrigins:
