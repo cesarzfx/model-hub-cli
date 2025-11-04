@@ -54,6 +54,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: lambdas/model_rate.lambda_handler
+      Runtime: python3.9
       Events:
         ApiEvent:
           Type: HttpApi
