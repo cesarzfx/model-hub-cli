@@ -25,13 +25,28 @@ main {
     padding: 30px 20px;
 }
 
-.health-section {
+.endpoint-section {
     text-align: center;
 }
 
 h2 {
     color: #444;
     margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+input[type="text"] {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
 }
 
 button {
