@@ -79,8 +79,8 @@ jobs:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
         aws-region: us-east-2
 
-    - name: SAM build (fresh, in container)
-      run: sam build --use-container --cached
+    - name: SAM build
+      run: sam build --use-container
 
     - name: SAM deploy
       run: |
