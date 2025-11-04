@@ -1,4 +1,4 @@
-const apiUrl = "https://9h4tsnso06.execute-api.us-east-2.amazonaws.com/";
+const apiUrl = "https://9h4tsnso06.execute-api.us-east-2.amazonaws.com";
 document.getElementById("checkBtn").onclick = async function() {
     document.getElementById("result").textContent = "Checking...";
     try {
