@@ -31,17 +31,35 @@ Resources:
             Path: /{proxy+}
             Method: ANY
 
+  # API Gateway
   ModelHubApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: $default
       CorsConfiguration:
         AllowMethods:
-          - '*'
+          - 'GET'
+          - 'POST'
+          - 'PUT'
+          - 'DELETE'
+          - 'OPTIONS'
         AllowHeaders:
           - '*'
         AllowOrigins:
           - '*'
+
+  #GET model rate endpoint
+  GetModelRateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambdas/model_rate.lambda_handler
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /artifact/model/{id}/rate
+            Method: GET
 
 Outputs:
   ApiEndpoint:
