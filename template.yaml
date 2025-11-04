@@ -13,8 +13,8 @@ Resources:
   ModelHubFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/
-      Handler: lambda_handler.lambda_handler
+      CodeUri: .
+      Handler: src/lambda_handler.lambda_handler
       Runtime: python3.9
       Architectures:
           - x86_64
