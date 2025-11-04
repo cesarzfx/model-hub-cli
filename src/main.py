@@ -201,6 +201,3 @@ if __name__ == "__main__":
     sys.exit(run_catalogue(sys.argv[1]))
 
 
-def lambda_handler(event: dict, context: object) -> dict:
-    """AWS Lambda handler function."""
-    return {"statusCode": 200, "body": "ok", "headers": {"Content-Type": "text/plain"}}
