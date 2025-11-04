@@ -1,15 +1,13 @@
-import sys
 import os
-
-# Add src directory to Python path for Lambda environment
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
-
+import sys
 from typing import Any, Dict
 from mangum import Mangum
-from src.api.main import app
+
+# Try local import first, then fall back to Lambda import path
+try:
+    from src.api.main import app  # Local development
+except ImportError:
+    from api.main import app  # type: ignore  # Lambda deployment
 
 handler = Mangum(app)
 
