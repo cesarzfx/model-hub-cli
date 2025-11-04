@@ -76,15 +76,51 @@ jobs:
         python -m pip install --upgrade pip
         pip install aws-sam-cli
 
+        #for debug purposes
+    - name: Show runtime deps (must include requests)
+      run: |
+        ls -la src || true
+        echo "----- src/requirements.txt -----"
+        if [ -f src/requirements.txt ]; then
+          cat src/requirements.txt
+          grep -i '^requests' src/requirements.txt >/dev/null || (echo "ERROR: 'requests' not listed in src/requirements.txt" && exit 1)
+        else
+          echo "ERROR: src/requirements.txt is missing"; exit 1
+        fi 
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
         aws-region: us-east-2
 
-    - name: SAM build
+        #for debug pruposes
+    - name: SAM build (fresh, in container)
+      run: sam build --use-container --cached=false
+    
+    - name: Inspect build output (deps present?)
       run: |
-        sam build --use-container
+        set -e
+        BUILD_DIR=".aws-sam/build/ModelHubFunction"
+        ls -la "$BUILD_DIR" | head -n 200
+        if compgen -G "$BUILD_DIR/requests*" > /dev/null; then
+          echo "OK: requests is present in $BUILD_DIR"
+        else
+          echo "ERROR: requests package not found in $BUILD_DIR"
+          exit 2
+        fi
+
+  # (Optional) belt-and-suspenders while debugging: vendor deps directly into src
+  # - name: TEMP: Vendor runtime deps into src
+  #   run: |
+  #     python -m pip install --upgrade pip
+  #     pip install -r src/requirements.txt -t src/
+
+    - name: Upload built function (artifact for manual inspection)
+      uses: actions/upload-artifact@v4
+      with:
+        name: built-ModelHubFunction
+        path: .aws-sam/build/ModelHubFunction/**
 
     - name: SAM deploy
       run: |
@@ -93,3 +129,31 @@ jobs:
           --parameter-overrides Environment=prod \
           --capabilities CAPABILITY_IAM \
           --resolve-s3
+
+
+      # ---- Post-deploy smoke tests ----
+    # A) Direct Lambda invoke (bypasses API Gateway). Replace FN_NAME with your real function alias name.
+    - name: Post-deploy Lambda smoke test (direct invoke)
+      continue-on-error: true
+      run: |
+        FN_NAME="<YOUR_FUNCTION_NAME>:prod"  # e.g., "model-hub-api-ModelHubFunction:prod" or the actual name+alias
+        echo '{}' > event.json
+        aws lambda invoke \
+          --function-name "$FN_NAME" \
+          --payload fileb://event.json \
+          --log-type Tail \
+          out.json \
+          --query 'LogResult' --output text | base64 --decode || true
+        echo; echo "--- Response body ---"
+        cat out.json || true
+
+    # B) Curl your API endpoint from the stack output (if you export it as ApiEndpoint)
+    - name: API smoke test (curl)
+      continue-on-error: true
+      run: |
+        EP=$(aws cloudformation describe-stacks \
+          --stack-name model-hub-api \
+          --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+          --output text)
+        echo "Endpoint: $EP"
+        curl -i "$EP" || true
