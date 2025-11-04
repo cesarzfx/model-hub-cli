@@ -8,7 +8,3 @@ pytest>=7.0.0
 
 # Include main requirements
 -r requirements.txt
-types-mangum
-types-PyYAML
-types-jwt
-types-uvicorn
