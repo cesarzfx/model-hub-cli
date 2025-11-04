@@ -199,5 +199,3 @@ if __name__ == "__main__":
         print("Usage: run <absolute_path_to_input_file>")
         sys.exit(1)
     sys.exit(run_catalogue(sys.argv[1]))
-
-
