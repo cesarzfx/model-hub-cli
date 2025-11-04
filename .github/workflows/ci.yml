@@ -96,7 +96,7 @@ jobs:
 
         #for debug pruposes
     - name: SAM build (fresh, in container)
-      run: sam build --use-container --cached=false
+      run: sam build --use-container --cached
     
     - name: Inspect build output (deps present?)
       run: |
