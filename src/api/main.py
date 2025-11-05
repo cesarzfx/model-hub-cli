@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 import yaml
-from src.api.auth import router as auth_router
-from src.api.artifact import router as artifact_router
-from src.api.model import router as model_router
-from src.api.reset import router as reset_router
+from .auth import router as auth_router, verify_token
+from .artifact import router as artifact_router
+from .model import router as model_router
+from .reset import router as reset_router
+from .health import router as health_router
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
 # Load the OpenAPI spec
 with open("ece461_fall_2025_openapi_spec.yaml", "r") as f:
@@ -16,11 +19,25 @@ app = FastAPI(
     version=openapi_spec["info"]["version"],
 )
 
-app.include_router(auth_router)
-app.include_router(artifact_router)
-app.include_router(model_router)
-app.include_router(reset_router)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, this would be more restrictive
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Create artifacts directory if it doesn't exist
+if not os.path.exists("/tmp/artifacts"):
+    os.makedirs("/tmp/artifacts")
+
+# Include routers
+app.include_router(auth_router, tags=["authentication"])
+app.include_router(health_router, tags=["system"], dependencies=[Depends(verify_token)])
+app.include_router(artifact_router, tags=["artifacts"])
+app.include_router(model_router, tags=["models"])
+app.include_router(reset_router, tags=["system"])
 
 # Add API Key security scheme to OpenAPI docs and apply globally to all endpoints
 def custom_openapi() -> dict:
@@ -39,13 +56,13 @@ def custom_openapi() -> dict:
             "name": "X-Authorization",
         }
     }
-    # Apply security to all paths
-    for path in openapi_schema["paths"].values():
-        for method in path.values():
-            method["security"] = [{"ApiKeyAuth": []}]
+    # Apply security to all paths except /authenticate
+    for path, path_item in openapi_schema["paths"].items():
+        if not path.endswith("/authenticate"):
+            for method in path_item.values():
+                method["security"] = [{"ApiKeyAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
-
 
 app.openapi = custom_openapi  # type: ignore[assignment]
 
