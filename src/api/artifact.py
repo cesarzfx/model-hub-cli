@@ -9,29 +9,35 @@ router = APIRouter()
 
 ARTIFACTS_DIR = "/tmp/artifacts"
 
+
 class ArtifactData(BaseModel):
     url: HttpUrl
+
 
 class ArtifactMetadata(BaseModel):
     name: str
     id: str
     type: str
 
+
 class ArtifactQuery(BaseModel):
     name: str
+
 
 class Artifact(BaseModel):
     metadata: ArtifactMetadata
     data: ArtifactData
 
+
 def store_artifact(artifact_id: str, data: dict) -> None:
     """Store artifact data in the filesystem"""
     if not os.path.exists(ARTIFACTS_DIR):
         os.makedirs(ARTIFACTS_DIR)
-    
+
     filepath = os.path.join(ARTIFACTS_DIR, f"{artifact_id}.json")
     with open(filepath, "w") as f:
         json.dump(data, f)
+
 
 def get_stored_artifact(artifact_id: str) -> Optional[dict]:
     """Retrieve artifact data from filesystem"""
@@ -41,8 +47,11 @@ def get_stored_artifact(artifact_id: str) -> Optional[dict]:
             return json.load(f)
     return None
 
+
 @router.post("/artifacts")
-def list_artifacts(query: List[ArtifactQuery], user: User = Depends(verify_token)) -> Dict:
+def list_artifacts(
+    query: List[ArtifactQuery], user: User = Depends(verify_token)
+) -> Dict:
     """List all artifacts matching the query"""
     artifacts = []
     if query and query[0].name == "*":
@@ -62,40 +71,37 @@ def list_artifacts(query: List[ArtifactQuery], user: User = Depends(verify_token
                     stored = get_stored_artifact(filename[:-5])
                     if stored and stored["metadata"]["name"] == q.name:
                         artifacts.append(stored["metadata"])
-    
+
     return {"artifacts": artifacts}
+
 
 @router.post("/artifact/{artifact_type}")
 def create_artifact(
-    artifact_type: str, 
-    artifact: ArtifactData,
-    user: User = Depends(verify_token)
+    artifact_type: str, artifact: ArtifactData, user: User = Depends(verify_token)
 ) -> Dict:
     """Create a new artifact"""
     # Generate a simple ID (in production this would be more sophisticated)
     import hashlib
+
     artifact_id = hashlib.md5(str(artifact.url).encode()).hexdigest()[:10]
-    
+
     # Create artifact object
     artifact_obj = Artifact(
         metadata=ArtifactMetadata(
-            name=str(artifact.url).split("/")[-1],
-            id=artifact_id,
-            type=artifact_type
+            name=str(artifact.url).split("/")[-1], id=artifact_id, type=artifact_type
         ),
-        data=artifact
+        data=artifact,
     )
-    
+
     # Store artifact
     store_artifact(artifact_id, artifact_obj.dict())
-    
+
     return artifact_obj.metadata.dict()
+
 
 @router.get("/artifact/{artifact_type}/{id}")
 def get_artifact(
-    artifact_type: str, 
-    id: str,
-    user: User = Depends(verify_token)
+    artifact_type: str, id: str, user: User = Depends(verify_token)
 ) -> Dict:
     """Get artifact by ID"""
     stored = get_stored_artifact(id)
@@ -105,22 +111,21 @@ def get_artifact(
         raise HTTPException(status_code=400, detail="Artifact type mismatch")
     return stored
 
+
 @router.delete("/artifact/{artifact_type}/{id}")
 def delete_artifact(
-    artifact_type: str, 
-    id: str,
-    user: User = Depends(verify_token)
+    artifact_type: str, id: str, user: User = Depends(verify_token)
 ) -> Dict:
     """Delete an artifact"""
     filepath = os.path.join(ARTIFACTS_DIR, f"{id}.json")
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Artifact not found")
-    
+
     # Verify type matches before deleting
     stored = get_stored_artifact(id)
     if stored["metadata"]["type"] != artifact_type:
         raise HTTPException(status_code=400, detail="Artifact type mismatch")
-    
+
     os.remove(filepath)
     return {"message": "Artifact deleted"}
 
@@ -130,7 +135,7 @@ def update_artifact(
     artifact_type: str,
     id: str,
     artifact: ArtifactData,
-    user: User = Depends(verify_token)
+    user: User = Depends(verify_token),
 ) -> Dict:
     """Update an existing artifact"""
     stored = get_stored_artifact(id)
@@ -138,9 +143,9 @@ def update_artifact(
         raise HTTPException(status_code=404, detail="Artifact not found")
     if stored["metadata"]["type"] != artifact_type:
         raise HTTPException(status_code=400, detail="Artifact type mismatch")
-    
+
     # Update artifact
     stored["data"] = artifact.dict()
     store_artifact(id, stored)
-    
+
     return stored

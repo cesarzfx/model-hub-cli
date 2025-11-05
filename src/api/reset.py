@@ -9,6 +9,7 @@ router = APIRouter()
 # Directory to store artifacts - this would be configured properly in production
 ARTIFACTS_DIR = "/tmp/artifacts"
 
+
 def clear_artifacts() -> None:
     """Clear all stored artifacts"""
     if os.path.exists(ARTIFACTS_DIR):
@@ -22,6 +23,7 @@ def clear_artifacts() -> None:
             except Exception as e:
                 print(f"Error removing {f}: {e}")
 
+
 @router.delete("/reset")
 def reset_registry(user: User = Depends(verify_token)) -> Dict:
     """
@@ -30,10 +32,10 @@ def reset_registry(user: User = Depends(verify_token)) -> Dict:
     """
     if not user.is_admin:
         raise HTTPException(status_code=401, detail="Admin privileges required")
-    
+
     # Clear all artifacts
     clear_artifacts()
-    
+
     # Reset any in-memory state here
-    
+
     return {"message": "Registry reset successfully"}

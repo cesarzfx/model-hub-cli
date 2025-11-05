@@ -39,6 +39,7 @@ app.include_router(artifact_router, tags=["artifacts"])
 app.include_router(model_router, tags=["models"])
 app.include_router(reset_router, tags=["system"])
 
+
 # Add API Key security scheme to OpenAPI docs and apply globally to all endpoints
 def custom_openapi() -> dict:
     if app.openapi_schema:
@@ -63,6 +64,7 @@ def custom_openapi() -> dict:
                 method["security"] = [{"ApiKeyAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi  # type: ignore[assignment]
 
