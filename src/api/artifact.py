@@ -123,6 +123,8 @@ def delete_artifact(
 
     # Verify type matches before deleting
     stored = get_stored_artifact(id)
+    if not stored:
+        raise HTTPException(status_code=404, detail="Artifact not found")
     if stored["metadata"]["type"] != artifact_type:
         raise HTTPException(status_code=400, detail="Artifact type mismatch")
 

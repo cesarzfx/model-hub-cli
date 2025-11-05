@@ -52,7 +52,7 @@ def verify_token(token: Optional[str] = Security(api_key_header)) -> User:
             raise HTTPException(status_code=403, detail="Token expired")
 
         return user
-    except jwt.JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=403, detail="Could not validate credentials")
 
 
