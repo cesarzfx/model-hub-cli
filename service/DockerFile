@@ -1,19 +1,40 @@
 # Use a lightweight Python base image
 FROM python:3.11-slim
 
+# Install Node.js for frontend build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Set working directory inside container
 WORKDIR /app
 
 # Copy only requirements first (for build cache efficiency)
-COPY requirements.txt .
+COPY service/requirements.txt .
 
-# Install system deps and Python requirements
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential && \
-    pip install --no-cache-dir -r requirements.txt && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install Python requirements
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Build frontend
+COPY service/frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm ci
+COPY service/frontend/ ./frontend/
+RUN npm run build
+
+# Back to app directory
+WORKDIR /app
 
 # Copy the rest of the service code
-COPY . .
+COPY service/app/ ./app/
+COPY service/pyproject.toml ./pyproject.toml
+# Copy built frontend dist (already built above, but ensure it's in the right place)
+# The frontend build output is already in /app/frontend/dist from the build step
+# Copy CLI src directory to access metrics
+COPY src/ ./src/
 
 # Expose FastAPI port
 EXPOSE 8080
@@ -21,6 +42,7 @@ EXPOSE 8080
 # Set environment variables (optional)
 ENV ADMIN_PASSWORD="ChangeMe!123"
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app:/app/.."
 
 # Launch Uvicorn server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
