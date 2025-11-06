@@ -34,7 +34,7 @@ if not os.path.exists("/tmp/artifacts"):
 
 # Include routers
 app.include_router(auth_router, tags=["authentication"])
-app.include_router(health_router, tags=["system"], dependencies=[Depends(verify_token)])
+app.include_router(health_router, tags=["system"])
 app.include_router(artifact_router, tags=["artifacts"])
 app.include_router(model_router, tags=["models"])
 app.include_router(reset_router, tags=["system"])

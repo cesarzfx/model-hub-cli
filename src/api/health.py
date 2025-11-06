@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 class TracksResponse(BaseModel):
-    planned_tracks: List[str]
+    plannedTracks: List[str]
 
 
 @router.get("/health")
@@ -37,9 +37,9 @@ async def get_tracks() -> TracksResponse:
         # Return the planned tracks
         # Make sure to include all tracks you plan to implement
         return TracksResponse(
-            planned_tracks=[
+            plannedTracks=[
                 "System Health Track",
-                "Access Control",
+                "Access control track",
                 "Reset Track",
                 "Performance track",
             ]
