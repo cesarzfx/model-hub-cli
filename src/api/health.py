@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 class TracksResponse(BaseModel):
-    plannedTracks: List[str]
+    planned_tracks: List[str]
 
 
 @router.get("/health")
@@ -36,7 +36,7 @@ async def get_tracks() -> TracksResponse:
     try:
         # Return the planned tracks
         # Make sure to include all tracks you plan to implement
-        return TracksResponse(plannedTracks=["Performance track"])
+    return TracksResponse(planned_tracks=["Performance track"])
     except Exception as e:
         raise HTTPException(
             status_code=500,
