@@ -61,7 +61,8 @@ def authenticate(auth: AuthRequest) -> dict:
     # For demo purposes - in production we would validate against a database
     if (
         auth.user.name == "ece30861defaultadminuser"
-        and auth.secret.password == "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages’"
+        and auth.secret.password
+        == "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages’"
     ):
         token = create_access_token(auth.user)
         return {"token": token}
