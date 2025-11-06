@@ -3,6 +3,7 @@ from typing import Dict, List
 import os
 import glob
 from src.api.auth import verify_token, User
+import shutil
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ def clear_artifacts() -> None:
         for f in files:
             try:
                 if os.path.isdir(f):
-                    os.rmdir(f)
+                    shutil.rmtree(f, ignore_errors=True)
                 else:
                     os.remove(f)
             except Exception as e:
@@ -38,4 +39,4 @@ def reset_registry(user: User = Depends(verify_token)) -> Dict:
 
     # Reset any in-memory state here
 
-    return {"message": "Registry reset successfully"}
+    return {"status": "success"}

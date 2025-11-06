@@ -51,7 +51,7 @@ def get_stored_artifact(artifact_id: str) -> Optional[dict]:
 @router.post("/artifacts")
 def list_artifacts(
     query: List[ArtifactQuery], user: User = Depends(verify_token)
-) -> Dict:
+) -> List[dict]:
     """List all artifacts matching the query"""
     artifacts = []
     if query and query[0].name == "*":
@@ -72,7 +72,7 @@ def list_artifacts(
                     if stored and stored["metadata"]["name"] == q.name:
                         artifacts.append(stored["metadata"])
 
-    return {"artifacts": artifacts}
+    return artifacts
 
 
 @router.post("/artifact/{artifact_type}")

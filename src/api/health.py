@@ -6,7 +6,8 @@ router = APIRouter()
 
 
 class TracksResponse(BaseModel):
-    plannedTracks: List[str]
+    planned_tracks: List[str]
+    status: str = "success"
 
 
 @router.get("/health")
@@ -37,11 +38,10 @@ async def get_tracks() -> TracksResponse:
         # Return the planned tracks
         # Make sure to include all tracks you plan to implement
         return TracksResponse(
-            plannedTracks=[
-                "System Health Track",
-                "Access control track",
-                "Reset Track",
-                "Performance track",
+            planned_tracks=[
+                "access_control",
+                "reset",
+                "performance",
             ]
         )
     except Exception as e:
