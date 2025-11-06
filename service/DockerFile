@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY service/frontend/package*.json ./frontend/
 WORKDIR /app/frontend
 RUN npm ci
-COPY service/frontend/ ./frontend/
+COPY service/frontend/ ./
 RUN npm run build
 
 # Back to app directory
