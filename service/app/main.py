@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from .api.v1 import packages, ingest, rate, lineage, license as license_api, admin, health, auth
+from .api.v1 import packages, ingest, rate, lineage, license as license_api, admin, health, auth, tracks
 from .core.database import init_db
 
 def create_app() -> FastAPI:
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(license_api.router, prefix="/v1/license", tags=["license"])
     app.include_router(admin.router, prefix="/v1/admin", tags=["admin"])
     app.include_router(health.router, prefix="/v1/health", tags=["health"])
+    app.include_router(tracks.router, prefix="/v1/tracks", tags=["tracks"])
     
     # Serve frontend static files
     # In container: /app/frontend/dist, locally: service/frontend/dist
