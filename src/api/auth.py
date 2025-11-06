@@ -60,11 +60,13 @@ def verify_token(token: Optional[str] = Security(api_key_header)) -> User:
 def authenticate(auth: AuthRequest) -> dict:
     # For demo purposes - in production we would validate against a database
     valid_password_ascii = "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages'"
-    valid_password_typographic = "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages’"
+    valid_password_typographic = (
+        "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages’"
+    )
     supplied = auth.secret.password
-    if (
-        auth.user.name == "ece30861defaultadminuser"
-        and supplied in (valid_password_ascii, valid_password_typographic)
+    if auth.user.name == "ece30861defaultadminuser" and supplied in (
+        valid_password_ascii,
+        valid_password_typographic,
     ):
         token = create_access_token(auth.user)
         return {"token": token}
