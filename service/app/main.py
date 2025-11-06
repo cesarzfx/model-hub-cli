@@ -23,14 +23,16 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def startup_event():
         init_db()
-        # Ensure admin user exists
+        # Ensure admin user exists on startup
         try:
-            from .api.v1 import admin
+            from .api.v1.admin import bootstrap
             from .domain import repos
-            from . import deps
             repo = repos.get_repo()
             # Call bootstrap to ensure admin user exists
-            admin.router.routes[0].endpoint(repo=repo)
+            bootstrap(repo=repo)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("Admin user bootstrap completed on startup")
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
