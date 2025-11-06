@@ -36,7 +36,7 @@ async def get_tracks() -> TracksResponse:
     try:
         # Return the planned tracks
         # Make sure to include all tracks you plan to implement
-    return TracksResponse(planned_tracks=["Performance track"])
+        return TracksResponse(planned_tracks=["Performance track"])
     except Exception as e:
         raise HTTPException(
             status_code=500,
