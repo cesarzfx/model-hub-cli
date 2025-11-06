@@ -51,16 +51,20 @@ def create_app() -> FastAPI:
     
     # Also expose tracks at root level for autograder compatibility (before frontend catch-all)
     from .api.v1.tracks import get_tracks, TracksResponse
+    from fastapi.responses import JSONResponse
     @app.get("/tracks", response_model=TracksResponse, tags=["tracks"])
     async def tracks_root():
         """Root-level tracks endpoint for autograder compatibility"""
-        return get_tracks()
+        result = get_tracks()
+        # Use JSONResponse to ensure proper JSON serialization
+        return JSONResponse(content=result.dict())
     
     # Also handle trailing slash for autograder compatibility
     @app.get("/tracks/", response_model=TracksResponse, tags=["tracks"])
     async def tracks_root_slash():
         """Root-level tracks endpoint with trailing slash"""
-        return get_tracks()
+        result = get_tracks()
+        return JSONResponse(content=result.dict())
     
     # Serve frontend static files
     # In container: /app/frontend/dist, locally: service/frontend/dist

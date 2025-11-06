@@ -18,7 +18,7 @@ def get_tracks():
     Return information about available tracks/features.
     The autograder checks for 'access control track' to verify authentication is implemented.
     """
-    return TracksResponse(
+    result = TracksResponse(
         planned_tracks=[
             TrackInfo(
                 name="access control track",
@@ -34,4 +34,6 @@ def get_tracks():
             )
         ]
     )
+    # Ensure we return the Pydantic model, not a dict
+    return result
 
