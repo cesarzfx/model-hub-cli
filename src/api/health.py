@@ -39,7 +39,7 @@ async def get_tracks() -> TracksResponse:
         return TracksResponse(
             planned_tracks=[
                 "System Health Track",
-                "Access Control Track",
+                "Access Control",
                 "Reset Track",
                 "Performance track",
             ]
