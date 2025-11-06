@@ -51,20 +51,19 @@ def create_app() -> FastAPI:
     
     # Also expose tracks at root level for autograder compatibility (before frontend catch-all)
     from .api.v1.tracks import get_tracks, TracksResponse
-    from fastapi.responses import JSONResponse
     @app.get("/tracks", response_model=TracksResponse, tags=["tracks"])
     async def tracks_root():
         """Root-level tracks endpoint for autograder compatibility"""
         result = get_tracks()
-        # Use JSONResponse to ensure proper JSON serialization
-        return JSONResponse(content=result.dict())
+        # Return the Pydantic model directly - FastAPI will serialize it to JSON
+        return result
     
     # Also handle trailing slash for autograder compatibility
     @app.get("/tracks/", response_model=TracksResponse, tags=["tracks"])
     async def tracks_root_slash():
         """Root-level tracks endpoint with trailing slash"""
         result = get_tracks()
-        return JSONResponse(content=result.dict())
+        return result
     
     # Serve frontend static files
     # In container: /app/frontend/dist, locally: service/frontend/dist
