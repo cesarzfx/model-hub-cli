@@ -17,11 +17,18 @@ async def get_health() -> Dict:
     return {}
 
 
-@router.get("/tracks", response_model=TracksResponse, 
+@router.get(
+    "/tracks",
+    response_model=TracksResponse,
     responses={
-        200: {"description": "Return the list of tracks the student plans to implement"},
-        500: {"description": "The system encountered an error while retrieving the student's track information"}
-    })
+        200: {
+            "description": "Return the list of tracks the student plans to implement"
+        },
+        500: {
+            "description": "The system encountered an error while retrieving the student's track information"
+        },
+    },
+)
 async def get_tracks() -> TracksResponse:
     """
     Get the list of tracks a student has planned to implement in their code.
@@ -29,11 +36,9 @@ async def get_tracks() -> TracksResponse:
     try:
         # Return the planned tracks
         # Make sure to include all tracks you plan to implement
-        return TracksResponse(plannedTracks=[
-            "Performance track"
-        ])
+        return TracksResponse(plannedTracks=["Performance track"])
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="The system encountered an error while retrieving the student's track information"
+            detail="The system encountered an error while retrieving the student's track information",
         )
