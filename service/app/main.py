@@ -10,9 +10,10 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Trustworthy Model Registry", version="1.0.0")
     
     # Add CORS middleware to allow frontend requests
+    # Allow all origins when deployed (frontend served from same domain), or specific origins for local dev
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:8080"],  # Frontend dev server and backend
+        allow_origins=["*"],  # Allow all origins - frontend is served from same domain when deployed
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
