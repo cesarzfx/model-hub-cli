@@ -39,9 +39,9 @@ async def get_tracks() -> TracksResponse:
         return TracksResponse(
             planned_tracks=[
                 "System Health Track",
-                "Access Control",
+                "Access Control Track",
                 "Reset Track",
-                "Performance track",
+                "Performance Track",
             ]
         )
     except Exception as e:

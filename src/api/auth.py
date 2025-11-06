@@ -62,8 +62,9 @@ def authenticate(auth: AuthRequest) -> dict:
     if (
         auth.user.name == "ece30861defaultadminuser"
         and auth.secret.password
-        == "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages’"
+        == "correcthorsebatterystaple123(!__+@**(A;DROP TABLE packages'"
     ):
+        auth.user.is_admin = True  # Set admin flag for admin user
         token = create_access_token(auth.user)
         return {"token": token}
     raise HTTPException(status_code=401, detail="Invalid username or password")

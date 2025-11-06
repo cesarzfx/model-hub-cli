@@ -7,11 +7,11 @@ from src.api.auth import verify_token, User
 router = APIRouter()
 
 # Directory to store artifacts - this would be configured properly in production
-ARTIFACTS_DIR = "/tmp/artifacts"
+ARTIFACTS_DIR = "/app/artifacts"  # Changed to match the test environment path
 
 
 def clear_artifacts() -> None:
-    """Clear all stored artifacts"""
+    """Clear all stored artifacts and recreate empty directory"""
     if os.path.exists(ARTIFACTS_DIR):
         files = glob.glob(f"{ARTIFACTS_DIR}/*")
         for f in files:
@@ -22,6 +22,9 @@ def clear_artifacts() -> None:
                     os.remove(f)
             except Exception as e:
                 print(f"Error removing {f}: {e}")
+
+    # Ensure artifacts directory exists after reset
+    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
 
 @router.delete("/reset")
