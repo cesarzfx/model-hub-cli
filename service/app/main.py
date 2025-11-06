@@ -48,8 +48,12 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/v1/admin", tags=["admin"])
     app.include_router(health.router, prefix="/v1/health", tags=["health"])
     app.include_router(tracks.router, prefix="/v1/tracks", tags=["tracks"])
-    # Also expose tracks at root level for autograder compatibility
-    app.include_router(tracks.router, prefix="/tracks", tags=["tracks"])
+    
+    # Also expose tracks at root level for autograder compatibility (before frontend catch-all)
+    from .api.v1.tracks import get_tracks, TracksResponse
+    @app.get("/tracks", response_model=TracksResponse, tags=["tracks"])
+    async def tracks_root():
+        return get_tracks()
     
     # Serve frontend static files
     # In container: /app/frontend/dist, locally: service/frontend/dist
