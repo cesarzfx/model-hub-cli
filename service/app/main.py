@@ -39,6 +39,12 @@ def create_app() -> FastAPI:
     if not frontend_build_path.exists():
         # Fallback for local development
         frontend_build_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+    
+    # Log for debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Frontend build path: {frontend_build_path}, exists: {frontend_build_path.exists()}")
+    
     if frontend_build_path.exists():
         # Mount static assets directory
         static_assets_path = frontend_build_path / "assets"
