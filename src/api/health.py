@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 from pydantic import BaseModel
 from loguru import logger
-from fastapi.requests import Request
+from starlette.requests import Request
 
 router = APIRouter()
 
@@ -47,10 +47,11 @@ async def get_tracks() -> TracksResponse:
 
 def log_request(request: Request) -> None:
     """Log details of the incoming request."""
-    logger.info(f"Endpoint called: {request.path}")
+    logger.info(f"Endpoint called: {request.url.path}")
     logger.info(f"Request method: {request.method}")
     logger.info(f"Request headers: {request.headers}")
-    logger.info(f"Request body: {request.get_data(as_text=True)}")
+    body = await request.body()
+    logger.info(f"Request body: {body.decode('utf-8')}" if body else "Request body: None")
 
 
 def example_endpoint(request: Request) -> dict:
