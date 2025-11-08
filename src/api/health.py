@@ -51,7 +51,9 @@ def log_request(request: Request) -> None:
     logger.info(f"Request method: {request.method}")
     logger.info(f"Request headers: {request.headers}")
     body = await request.body()
-    logger.info(f"Request body: {body.decode('utf-8')}" if body else "Request body: None")
+    logger.info(
+        f"Request body: {body.decode('utf-8')}" if body else "Request body: None"
+    )
 
 
 def example_endpoint(request: Request) -> dict:
