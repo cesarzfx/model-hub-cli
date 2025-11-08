@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 import os
 import glob
-from src.api.auth import verify_token, User
 
 router = APIRouter()
 
@@ -28,14 +27,10 @@ def clear_artifacts() -> None:
 
 
 @router.delete("/reset")
-def reset_registry(user: User = Depends(verify_token)) -> Dict:
+def reset_registry() -> Dict:
     """
     Reset the registry to its initial state.
-    Requires admin privileges.
     """
-    if not user.is_admin:
-        raise HTTPException(status_code=401, detail="Admin privileges required")
-
     # Clear all artifacts
     clear_artifacts()
 

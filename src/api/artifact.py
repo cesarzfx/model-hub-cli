@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
 from typing import List, Dict, Optional
 import os
 import json
-from src.api.auth import verify_token, User
 
 router = APIRouter()
 
@@ -49,9 +48,7 @@ def get_stored_artifact(artifact_id: str) -> Optional[dict]:
 
 
 @router.post("/artifacts")
-def list_artifacts(
-    query: List[ArtifactQuery], user: User = Depends(verify_token)
-) -> Dict:
+def list_artifacts(query: List[ArtifactQuery]) -> Dict:
     """List all artifacts matching the query"""
     artifacts = []
     if query and query[0].name == "*":
@@ -76,9 +73,7 @@ def list_artifacts(
 
 
 @router.post("/artifact/{artifact_type}")
-def create_artifact(
-    artifact_type: str, artifact: ArtifactData, user: User = Depends(verify_token)
-) -> Dict:
+def create_artifact(artifact_type: str, artifact: ArtifactData) -> Dict:
     """Create a new artifact"""
     # Generate a simple ID (in production this would be more sophisticated)
     import hashlib
@@ -100,9 +95,7 @@ def create_artifact(
 
 
 @router.get("/artifact/{artifact_type}/{id}")
-def get_artifact(
-    artifact_type: str, id: str, user: User = Depends(verify_token)
-) -> Dict:
+def get_artifact(artifact_type: str, id: str) -> Dict:
     """Get artifact by ID"""
     stored = get_stored_artifact(id)
     if not stored:
@@ -113,9 +106,7 @@ def get_artifact(
 
 
 @router.delete("/artifact/{artifact_type}/{id}")
-def delete_artifact(
-    artifact_type: str, id: str, user: User = Depends(verify_token)
-) -> Dict:
+def delete_artifact(artifact_type: str, id: str) -> Dict:
     """Delete an artifact"""
     filepath = os.path.join(ARTIFACTS_DIR, f"{id}.json")
     if not os.path.exists(filepath):
@@ -137,7 +128,6 @@ def update_artifact(
     artifact_type: str,
     id: str,
     artifact: ArtifactData,
-    user: User = Depends(verify_token),
 ) -> Dict:
     """Update an existing artifact"""
     stored = get_stored_artifact(id)
