@@ -35,9 +35,7 @@ async def get_tracks() -> TracksResponse:
     """
     try:
         # Return the planned tracks as per the updated request
-        return TracksResponse(
-            plannedTracks=["Access control track"]
-        )
+        return TracksResponse(plannedTracks=["Access control track"])
     except Exception as e:
         raise HTTPException(
             status_code=500,
