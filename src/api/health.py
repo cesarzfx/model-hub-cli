@@ -34,14 +34,9 @@ async def get_tracks() -> TracksResponse:
     Get the list of tracks a student has planned to implement in their code.
     """
     try:
-        # Return the planned tracks as per the OpenAPI spec
+        # Return the planned tracks as per the updated request
         return TracksResponse(
-            plannedTracks=[
-                "Performance track",
-                "Access control track",
-                "High assurance track",
-                "Other Security track",
-            ]
+            plannedTracks=["Access control track"]
         )
     except Exception as e:
         raise HTTPException(
