@@ -45,7 +45,7 @@ async def get_tracks() -> TracksResponse:
         )
 
 
-def log_request(request: Request) -> None:
+async def log_request(request: Request) -> None:
     """Log details of the incoming request."""
     logger.info(f"Endpoint called: {request.url.path}")
     logger.info(f"Request method: {request.method}")
@@ -56,7 +56,7 @@ def log_request(request: Request) -> None:
     )
 
 
-def example_endpoint(request: Request) -> dict:
-    log_request(request)
+async def example_endpoint(request: Request) -> dict:
+    await log_request(request)
     # ...existing endpoint logic...
     return {"status": "success"}
