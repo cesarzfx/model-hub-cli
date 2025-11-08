@@ -177,14 +177,16 @@ def configure_logging() -> None:
     else:
         return  # Silent -- No Logging
 
+    # Ensure logs directory exists
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+
     if log_file:
         try:
-            if not os.path.exists(log_file):
-                print(f"Log file does not exist: '{log_file}'")
-                sys.exit(1)
-            logger.add(log_file, rotation="1 MB", level=log_level)
+            log_file_path = os.path.join(log_dir, log_file)
+            logger.add(log_file_path, rotation="1 MB", level=log_level)
         except Exception as e:
-            print(f"Failed to configure log file '{log_file}': {e}")
+            print(f"Failed to configure log file '{log_file_path}': {e}")
             exit(1)
     else:
         logger.add(sys.stderr, level=log_level)

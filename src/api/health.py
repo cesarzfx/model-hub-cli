@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 from pydantic import BaseModel
 from loguru import logger
+from fastapi.requests import Request
 
 router = APIRouter()
 
@@ -44,7 +45,7 @@ async def get_tracks() -> TracksResponse:
         )
 
 
-def log_request(request):
+def log_request(request: Request) -> None:
     """Log details of the incoming request."""
     logger.info(f"Endpoint called: {request.path}")
     logger.info(f"Request method: {request.method}")
@@ -52,8 +53,7 @@ def log_request(request):
     logger.info(f"Request body: {request.get_data(as_text=True)}")
 
 
-# Example usage in an endpoint
-def example_endpoint(request):
+def example_endpoint(request: Request) -> dict:
     log_request(request)
     # ...existing endpoint logic...
     return {"status": "success"}
