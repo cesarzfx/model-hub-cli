@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 class TracksResponse(BaseModel):
-    planned_tracks: List[str]
+    plannedTracks: List[str]  # Updated to camelCase to match the OpenAPI spec
 
 
 @router.get("/health")
@@ -34,14 +34,13 @@ async def get_tracks() -> TracksResponse:
     Get the list of tracks a student has planned to implement in their code.
     """
     try:
-        # Return the planned tracks
-        # Make sure to include all tracks you plan to implement
+        # Return the planned tracks as per the OpenAPI spec
         return TracksResponse(
-            planned_tracks=[
-                "System Health Track",
-                "Access Control Track",
-                "Reset Track",
-                "Performance Track",
+            plannedTracks=[
+                "Performance track",
+                "Access control track",
+                "High assurance track",
+                "Other Security track",
             ]
         )
     except Exception as e:
