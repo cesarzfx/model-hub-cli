@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 from pydantic import BaseModel
+from loguru import logger
 
 router = APIRouter()
 
@@ -41,3 +42,18 @@ async def get_tracks() -> TracksResponse:
             status_code=500,
             detail="The system encountered an error while retrieving the student's track information",
         )
+
+
+def log_request(request):
+    """Log details of the incoming request."""
+    logger.info(f"Endpoint called: {request.path}")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"Request headers: {request.headers}")
+    logger.info(f"Request body: {request.get_data(as_text=True)}")
+
+
+# Example usage in an endpoint
+def example_endpoint(request):
+    log_request(request)
+    # ...existing endpoint logic...
+    return {"status": "success"}
