@@ -14,7 +14,7 @@ async def get_health() -> Dict:
     """
     Lightweight liveness probe. Returns HTTP 200 when the registry API is reachable.
     """
-    return {}
+    return {"description": "Service reachable."}
 
 
 @router.get(
