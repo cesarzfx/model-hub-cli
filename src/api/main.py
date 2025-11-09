@@ -4,6 +4,7 @@ from .artifact import router as artifact_router
 from .model import router as model_router
 from .reset import router as reset_router
 from .health import router as health_router
+from .auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
@@ -32,6 +33,7 @@ if not os.path.exists("/tmp/artifacts"):
 
 # Include routers
 app.include_router(health_router, tags=["system"])
+app.include_router(auth_router, tags=["auth"])
 app.include_router(artifact_router, tags=["artifacts"])
 app.include_router(model_router, tags=["models"])
 app.include_router(reset_router, tags=["system"])
