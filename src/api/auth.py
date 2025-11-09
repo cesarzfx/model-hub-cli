@@ -19,7 +19,7 @@ class AuthenticationRequest(BaseModel):
 
 
 @router.put("/authenticate")
-async def authenticate(auth_request: AuthenticationRequest):
+async def authenticate(auth_request: AuthenticationRequest) -> None:
     """
     This system does not support authentication (NON-BASELINE).
     """
