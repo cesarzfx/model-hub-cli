@@ -7,8 +7,13 @@ from pydantic import BaseModel
 router = APIRouter()
 
 
+class TrackInfo(BaseModel):
+    name: str
+    description: str
+
+
 class TracksResponse(BaseModel):
-    planned_tracks: List[str]
+    planned_tracks: List[TrackInfo]
 
 
 @router.get("", response_model=TracksResponse)
@@ -19,9 +24,18 @@ def get_tracks():
     """
     return TracksResponse(
         planned_tracks=[
-            "access control track",
-            "model registry track",
-            "cli integration track",
+            TrackInfo(
+                name="Access Control Track",
+                description="Authentication and authorization system with role-based access control",
+            ),
+            TrackInfo(
+                name="Model Registry Track",
+                description="Model package management and evaluation system",
+            ),
+            TrackInfo(
+                name="CLI Integration Track",
+                description="Integration with CLI metrics for model evaluation",
+            ),
         ]
     )
 
