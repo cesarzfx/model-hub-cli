@@ -25,7 +25,7 @@ def get_tracks():
     return TracksResponse(
         planned_tracks=[
             TrackInfo(
-                name="Access Control Track",
+                name="access control track",
                 description="Authentication and authorization system with role-based access control",
             ),
             TrackInfo(
