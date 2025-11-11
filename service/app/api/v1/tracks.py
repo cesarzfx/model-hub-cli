@@ -13,8 +13,8 @@ class TrackInfo(BaseModel):
 
 
 class TracksResponse(BaseModel):
-    planned_tracks: List[TrackInfo]
-    planned_track_names: List[str]
+    planned_tracks: List[str]
+    tracks_detail: List[TrackInfo]
 
 
 @router.get("", response_model=TracksResponse)
@@ -23,7 +23,7 @@ def get_tracks():
     Return information about available tracks/features.
     The autograder checks for 'access control track' to verify authentication is implemented.
     """
-    track_infos = [
+    track_infos: List[TrackInfo] = [
         TrackInfo(
             name="Access Control Track",
             description="Authentication and authorization system with role-based access control",
@@ -37,8 +37,11 @@ def get_tracks():
             description="Integration with CLI metrics for model evaluation",
         ),
     ]
-    return TracksResponse(
-        planned_tracks=track_infos,
-        planned_track_names=[track.name for track in track_infos],
-    )
+    planned_tracks = [
+        "access control track",
+        "model registry track",
+        "cli integration track",
+    ]
+
+    return TracksResponse(planned_tracks=planned_tracks, tracks_detail=track_infos)
 
