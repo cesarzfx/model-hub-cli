@@ -37,11 +37,7 @@ def get_tracks():
             description="Integration with CLI metrics for model evaluation",
         ),
     ]
-    planned_tracks = [
-        "access control track",
-        "model registry track",
-        "cli integration track",
-    ]
+    planned_tracks = [track.name for track in track_infos]
 
     return TracksResponse(planned_tracks=planned_tracks, tracks_detail=track_infos)
 
