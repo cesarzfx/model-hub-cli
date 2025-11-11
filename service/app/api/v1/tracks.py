@@ -4,6 +4,8 @@ from typing import List
 
 from pydantic import BaseModel
 
+router = APIRouter()
+
 
 class TracksResponse(BaseModel):
     planned_tracks: List[str]
