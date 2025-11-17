@@ -7,8 +7,6 @@ from .health import router as health_router
 from .auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from loguru import logger
-from starlette.requests import Request
 
 # Load the OpenAPI spec
 with open("ece461_fall_2025_openapi_spec.yaml", "r") as f:
@@ -20,7 +18,6 @@ app = FastAPI(
     version=openapi_spec["info"]["version"],
 )
 
-
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -29,33 +26,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# Add request logging middleware
-
-from starlette.responses import Response
-from typing import Callable
-
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next: Callable) -> Response:
-    logger.info(f"Endpoint called: {request.url.path}")
-    logger.info(f"Request method: {request.method}")
-    logger.info(f"Request headers: {dict(request.headers)}")
-    body = await request.body()
-    logger.info(f"Request body: {body.decode('utf-8') if body else 'None'}")
-    response = await call_next(request)
-    logger.info(f"Response status: {response.status_code}")
-    # Log response body safely
-    if hasattr(response, "body"):
-        try:
-            logger.info(
-                f"Response body: {response.body.decode('utf-8') if response.body else 'None'}"
-            )
-        except Exception as e:
-            logger.warning(f"Could not log response body: {e}")
-    return response
-
 
 # Create artifacts directory if it doesn't exist
 if not os.path.exists("/tmp/artifacts"):

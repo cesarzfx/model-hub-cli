@@ -2,13 +2,6 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 from pydantic import BaseModel
 from loguru import logger
-import os
-
-# Ensure logs directory exists and configure Loguru to write to logs/app.log
-log_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../logs"))
-os.makedirs(log_dir, exist_ok=True)
-log_path = os.path.join(log_dir, "app.log")
-logger.add(log_path, rotation="10 MB", retention="10 days")
 from starlette.requests import Request
 
 router = APIRouter()
