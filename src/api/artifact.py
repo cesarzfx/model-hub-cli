@@ -43,7 +43,11 @@ def get_stored_artifact(artifact_id: str) -> Optional[dict]:
     filepath = os.path.join(ARTIFACTS_DIR, f"{artifact_id}.json")
     if os.path.exists(filepath):
         with open(filepath, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            # If data is not a dict, wrap it in one for safety
+            return {"metadata": {}, "data": data}
     return None
 
 
@@ -51,22 +55,27 @@ def get_stored_artifact(artifact_id: str) -> Optional[dict]:
 def list_artifacts(query: List[ArtifactQuery]) -> Dict:
     """List all artifacts matching the query"""
     artifacts = []
+    if not os.path.exists(ARTIFACTS_DIR):
+        return {"artifacts": []}
     if query and query[0].name == "*":
         # Return all artifacts
         for filename in os.listdir(ARTIFACTS_DIR):
             if filename.endswith(".json"):
                 artifact_id = filename[:-5]  # Remove .json
                 stored = get_stored_artifact(artifact_id)
-                if stored:
+                if stored and isinstance(stored.get("metadata"), dict):
                     artifacts.append(stored["metadata"])
     else:
         # Return artifacts matching names
         for q in query:
-            # In production this would use a proper search mechanism
             for filename in os.listdir(ARTIFACTS_DIR):
                 if filename.endswith(".json"):
                     stored = get_stored_artifact(filename[:-5])
-                    if stored and stored["metadata"]["name"] == q.name:
+                    if (
+                        stored
+                        and isinstance(stored.get("metadata"), dict)
+                        and stored["metadata"].get("name") == q.name
+                    ):
                         artifacts.append(stored["metadata"])
 
     return {"artifacts": artifacts}
