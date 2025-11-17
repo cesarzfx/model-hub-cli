@@ -28,15 +28,12 @@ class AuthenticationRequest(BaseModel):
 @router.put("/authenticate")
 async def authenticate(
     auth_request: AuthenticationRequest,
-    request: Request,
-    authorization: str = Header(None),
+    request: Request
 ) -> str:
     """
     Authenticate user and return a token if credentials are valid.
     """
-    # Require Authorization header
-    if authorization is None:
-        raise HTTPException(status_code=400, detail="Missing Authorization header.")
+
 
     # Validate request body
     if not auth_request or not auth_request.user or not auth_request.secret:

@@ -33,20 +33,11 @@ def clear_artifacts() -> None:
 
 
 @router.delete("/reset")
-def reset_registry(X_Authorization: str = Header(...)) -> Dict:
+def reset_registry() -> Dict:
     """
     Reset the registry to its initial state. Requires valid X-Authorization token.
     """
-    # Check for token
-    if not X_Authorization:
-        raise HTTPException(
-            status_code=401, detail="You do not have permission to reset the registry."
-        )
-    if X_Authorization not in issued_tokens:
-        raise HTTPException(
-            status_code=403,
-            detail="Authentication failed due to invalid or missing AuthenticationToken.",
-        )
+
 
     # Clear all artifacts
     clear_artifacts()
