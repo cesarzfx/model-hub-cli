@@ -16,7 +16,7 @@ class ArtifactData(BaseModel):
 class ArtifactMetadata(BaseModel):
     name: str
     id: str
-    type: str
+    types: List[str]
 
 
 class ArtifactQuery(BaseModel):
@@ -57,6 +57,8 @@ def list_artifacts(query: List[ArtifactQuery]) -> Dict:
     artifacts = []
     if not os.path.exists(ARTIFACTS_DIR):
         return {"artifacts": []}
+    if not query or len(query) == 0:
+        return {"artifacts": []}
     if query and query[0].name == "*":
         # Return all artifacts
         for filename in os.listdir(ARTIFACTS_DIR):
@@ -92,7 +94,7 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Dict:
     # Create artifact object
     artifact_obj = Artifact(
         metadata=ArtifactMetadata(
-            name=str(artifact.url).split("/")[-1], id=artifact_id, type=artifact_type
+            name=str(artifact.url).split("/")[-1], id=artifact_id, types=[artifact_type]
         ),
         data=artifact,
     )
@@ -100,7 +102,8 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Dict:
     # Store artifact
     store_artifact(artifact_id, artifact_obj.dict())
 
-    return artifact_obj.metadata.dict()
+    # Return the full artifact object as dict (not just metadata)
+    return artifact_obj.dict()
 
 
 @router.get("/artifact/{artifact_type}/{id}")
