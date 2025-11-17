@@ -1,12 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from typing import Dict, List
 import os
 import glob
 
 router = APIRouter()
 
-# Directory to store artifacts - this would be configured properly in production
-ARTIFACTS_DIR = "/app/artifacts"  # Changed to match the test environment path
+# Import issued_tokens from auth.py
+try:
+    from .auth import issued_tokens
+except ImportError:
+    issued_tokens = {}
+
+# Directory to store artifacts - use local writable directory for testing
+ARTIFACTS_DIR = "./artifacts"
 
 
 def clear_artifacts() -> None:
@@ -27,10 +33,21 @@ def clear_artifacts() -> None:
 
 
 @router.delete("/reset")
-def reset_registry() -> Dict:
+def reset_registry(X_Authorization: str = Header(...)) -> Dict:
     """
-    Reset the registry to its initial state.
+    Reset the registry to its initial state. Requires valid X-Authorization token.
     """
+    # Check for token
+    if not X_Authorization:
+        raise HTTPException(
+            status_code=401, detail="You do not have permission to reset the registry."
+        )
+    if X_Authorization not in issued_tokens:
+        raise HTTPException(
+            status_code=403,
+            detail="Authentication failed due to invalid or missing AuthenticationToken.",
+        )
+
     # Clear all artifacts
     clear_artifacts()
 

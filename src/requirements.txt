@@ -39,3 +39,4 @@ fastapi
 uvicorn
 PyJWT
 python-multipart
+types-PyYAML
