@@ -120,10 +120,19 @@ def list_artifacts(
       - Request: array of ArtifactQuery.
       - Response: array of ArtifactMetadata (no wrapper object).
       - Header 'offset' is used for pagination; we always return "0" or the given one.
+
+    Behavior:
+      - For each query q:
+          - name == "*"  => wildcard name (matches all names)
+          - otherwise    => exact name match
+          - types is None or [] => all types allowed
+          - otherwise           => metadata.type must be in q.types
+      - Results are the union of all queries (deduped by metadata.id).
     """
     # Simple pagination stub: always echo provided offset or "0"
     response.headers["offset"] = offset or "0"
 
+    # No artifacts directory or no queries -> no results
     if not ARTIFACTS_DIR.exists():
         return []
 
@@ -131,30 +140,32 @@ def list_artifacts(
         return []
 
     stored_artifacts = iter_all_artifacts()
-    results: List[ArtifactMetadata] = []
 
-    # Wildcard query: return all artifacts
-    if query[0].name == "*":
+    # Use dict keyed by id to dedupe across multiple queries
+    results_by_id: dict[str, ArtifactMetadata] = {}
+
+    for q in query:
         for a in stored_artifacts:
-            md = a.get("metadata", {})
+            md_raw = a.get("metadata", {})
             try:
-                results.append(ArtifactMetadata(**md))
+                md = ArtifactMetadata(**md_raw)
             except Exception:
                 # Skip malformed entries instead of crashing
                 continue
-        return results
 
-    # Otherwise, match by name (ignore types for now)
-    wanted_names = {q.name for q in query}
-    for a in stored_artifacts:
-        md = a.get("metadata", {})
-        if md.get("name") in wanted_names:
-            try:
-                results.append(ArtifactMetadata(**md))
-            except Exception:
+            # Name matching
+            if q.name != "*" and md.name != q.name:
                 continue
 
-    return results
+            # Type matching
+            if q.types is not None and len(q.types) > 0:
+                if md.type not in q.types:
+                    continue
+
+            # Passed filters -> include
+            results_by_id[md.id] = md
+
+    return list(results_by_id.values())
 
 
 # ---------- /artifact/{artifact_type} (create) ----------
