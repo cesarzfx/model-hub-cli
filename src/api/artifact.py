@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from typing import List, Optional
 from pathlib import Path
 import os
@@ -18,12 +18,12 @@ ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", "/tmp/artifacts"))
 class ArtifactData(BaseModel):
     """
     ArtifactData as per spec:
-      - url: required, uri string
-      - download_url: optional, read-only in spec (we set it in responses)
+      - url: required, uri string (we store as plain str for JSON safety)
+      - download_url: optional, set in responses
     """
 
-    url: HttpUrl
-    download_url: Optional[HttpUrl] = None
+    url: str
+    download_url: Optional[str] = None
 
 
 class ArtifactMetadata(BaseModel):
@@ -71,6 +71,7 @@ def store_artifact(artifact_id: str, data: dict) -> None:
     ensure_artifact_dir()
     filepath = ARTIFACTS_DIR / f"{artifact_id}.json"
     with filepath.open("w") as f:
+        # data must contain only JSON-serializable types (str, int, list, dict, etc.)
         json.dump(data, f)
 
 
@@ -182,7 +183,7 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
     artifact_id = hashlib.md5(raw_id.encode("utf-8")).hexdigest()[:10]
 
     # Derive a human-readable name from the URL (last path segment)
-    url_str = str(artifact.url)
+    url_str = artifact.url
     if "/" in url_str:
         name = url_str.rstrip("/").split("/")[-1] or url_str
     else:
@@ -210,7 +211,7 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
         data=data_obj,
     )
 
-    # Persist to disk
+    # Persist to disk (now fully JSON-serializable)
     store_artifact(artifact_id, artifact_obj.dict())
 
     return artifact_obj
