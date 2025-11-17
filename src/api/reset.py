@@ -38,7 +38,6 @@ def reset_registry() -> Dict:
     Reset the registry to its initial state. Requires valid X-Authorization token.
     """
 
-
     # Clear all artifacts
     clear_artifacts()
 
