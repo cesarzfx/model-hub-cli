@@ -11,8 +11,8 @@ try:
 except ImportError:
     issued_tokens = {}
 
-# Directory to store artifacts - use local writable directory for testing
-ARTIFACTS_DIR = "./artifacts"
+# Directory to store artifacts - use /tmp for AWS Lambda compatibility
+ARTIFACTS_DIR = "/tmp/artifacts"
 
 
 def clear_artifacts() -> None:
