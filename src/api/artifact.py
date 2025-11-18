@@ -221,10 +221,11 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
     Retrieve artifacts whose metadata.name matches the given regular expression.
 
     Behavior:
-      - Compiles the provided regex.
-      - Applies re.search over metadata.name for all stored artifacts.
+      - If the regex looks like a simple exact name (e.g., "name" or "^name$"),
+        we treat it as a literal name lookup (exact match).
+      - Otherwise, we compile the regex and apply re.search over metadata.name.
       - Returns a JSON array of ArtifactMetadata for matches.
-      - If no artifacts match, returns 404 as per spec:
+      - If no artifacts match, returns 404:
           "No artifact found under this regex."
     """
     if not ARTIFACTS_DIR.exists():
@@ -232,14 +233,45 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
             status_code=404, detail="No artifact found under this regex"
         )
 
+    raw_regex = payload.regex
+
+    # Detect "simple exact name" patterns like "name" or "^name$"
+    simple_pattern = raw_regex
+    if simple_pattern.startswith("^"):
+        simple_pattern = simple_pattern[1:]
+    if simple_pattern.endswith("$"):
+        simple_pattern = simple_pattern[:-1]
+
+    # Allowed characters for simple exact-match names
+    if simple_pattern and re.fullmatch(r"[A-Za-z0-9._\-]+", simple_pattern):
+        stored_artifacts = iter_all_artifacts()
+        results_exact: List[ArtifactMetadata] = []
+
+        for a in stored_artifacts:
+            md_raw = a.get("metadata", {})
+            try:
+                md = ArtifactMetadata(**md_raw)
+            except Exception:
+                continue
+
+            if md.name == simple_pattern:
+                results_exact.append(md)
+
+        if not results_exact:
+            raise HTTPException(
+                status_code=404, detail="No artifact found under this regex"
+            )
+
+        return results_exact
+
+    # Fallback: genuine regex search
     try:
-        pattern = re.compile(payload.regex)
+        pattern = re.compile(raw_regex)
     except re.error:
-        # Malformed regex
         raise HTTPException(status_code=400, detail="Invalid regular expression")
 
     stored_artifacts = iter_all_artifacts()
-    results: List[ArtifactMetadata] = []
+    results_regex: List[ArtifactMetadata] = []
 
     for a in stored_artifacts:
         md_raw = a.get("metadata", {})
@@ -249,14 +281,14 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
             continue
 
         if pattern.search(md.name):
-            results.append(md)
+            results_regex.append(md)
 
-    if not results:
+    if not results_regex:
         raise HTTPException(
             status_code=404, detail="No artifact found under this regex"
         )
 
-    return results
+    return results_regex
 
 
 # ---------- /artifact/{artifact_type} (create) ----------
