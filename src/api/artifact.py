@@ -360,11 +360,17 @@ def verify_token(x_authorization: Optional[str] = Header(None)) -> bool:
     Returns True if token is valid, raises HTTPException with 403 if not.
     """
     if not x_authorization:
-        raise HTTPException(status_code=403, detail="Authentication failed due to invalid or missing AuthenticationToken.")
+        raise HTTPException(
+            status_code=403,
+            detail="Authentication failed due to invalid or missing AuthenticationToken.",
+        )
 
     # Check if token is in issued_tokens
     if x_authorization not in issued_tokens:
-        raise HTTPException(status_code=403, detail="Authentication failed due to invalid or missing AuthenticationToken.")
+        raise HTTPException(
+            status_code=403,
+            detail="Authentication failed due to invalid or missing AuthenticationToken.",
+        )
 
     return True
 
@@ -394,13 +400,19 @@ def artifacts_by_regex(
 
     # Validate regex field
     if not body.regex or not isinstance(body.regex, str) or body.regex.strip() == "":
-        raise HTTPException(status_code=400, detail="There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid")
+        raise HTTPException(
+            status_code=400,
+            detail="There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid",
+        )
 
     # Try to compile the regex pattern
     try:
         pattern = re.compile(body.regex)
     except re.error as e:
-        raise HTTPException(status_code=400, detail=f"There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid: {str(e)}",
+        )
 
     # Get all artifacts
     if not ARTIFACTS_DIR.exists():
@@ -439,6 +451,8 @@ def artifacts_by_regex(
 
     # Per spec: return 404 if no artifacts match
     if not results:
-        raise HTTPException(status_code=404, detail="No artifact found under this regex.")
+        raise HTTPException(
+            status_code=404, detail="No artifact found under this regex."
+        )
 
     return results
