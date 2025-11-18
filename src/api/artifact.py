@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import json
 import hashlib
+import re
 
 router = APIRouter()
 
@@ -56,6 +57,17 @@ class Artifact(BaseModel):
 
     metadata: ArtifactMetadata
     data: ArtifactData
+
+
+class ArtifactRegEx(BaseModel):
+    """
+    Request body for /artifact/byRegEx.
+
+    Spec: ArtifactRegEx:
+      - regex: string (required)
+    """
+
+    regex: str
 
 
 # ---------- Storage helpers ----------
@@ -196,6 +208,53 @@ def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
 
         if md.name == name:
             results.append(md)
+
+    return results
+
+
+# ---------- /artifact/byRegEx (regex search) ----------
+
+
+@router.post("/artifact/byRegEx", response_model=List[ArtifactMetadata])
+def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
+    """
+    Retrieve artifacts whose metadata.name matches the given regular expression.
+
+    Behavior:
+      - Compiles the provided regex.
+      - Applies re.search over metadata.name for all stored artifacts.
+      - Returns a JSON array of ArtifactMetadata for matches.
+      - If no artifacts match, returns 404 as per spec:
+          "No artifact found under this regex."
+    """
+    if not ARTIFACTS_DIR.exists():
+        raise HTTPException(
+            status_code=404, detail="No artifact found under this regex"
+        )
+
+    try:
+        pattern = re.compile(payload.regex)
+    except re.error:
+        # Malformed regex
+        raise HTTPException(status_code=400, detail="Invalid regular expression")
+
+    stored_artifacts = iter_all_artifacts()
+    results: List[ArtifactMetadata] = []
+
+    for a in stored_artifacts:
+        md_raw = a.get("metadata", {})
+        try:
+            md = ArtifactMetadata(**md_raw)
+        except Exception:
+            continue
+
+        if pattern.search(md.name):
+            results.append(md)
+
+    if not results:
+        raise HTTPException(
+            status_code=404, detail="No artifact found under this regex"
+        )
 
     return results
 
