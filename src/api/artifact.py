@@ -1,15 +1,22 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Header
 from pydantic import BaseModel
 from typing import List, Optional
 from pathlib import Path
 import os
 import json
 import hashlib
+import re
 
 router = APIRouter()
 
 # Use /tmp on Lambda; can override with ARTIFACTS_DIR env var for local dev
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", "/tmp/artifacts"))
+
+# Import issued_tokens for authentication
+try:
+    from .auth import issued_tokens
+except ImportError:
+    issued_tokens = {}
 
 
 # ---------- Models ----------
@@ -47,6 +54,15 @@ class ArtifactQuery(BaseModel):
 
     name: str
     types: Optional[List[str]] = None
+
+
+class ArtifactRegEx(BaseModel):
+    """
+    Request body for /artifact/byRegEx POST.
+    Spec: regex (required string containing a regular expression pattern)
+    """
+
+    regex: str
 
 
 class Artifact(BaseModel):
@@ -336,3 +352,93 @@ def update_artifact(artifact_type: str, id: str, artifact: Artifact) -> Artifact
         raise HTTPException(
             status_code=500, detail="Stored artifact is invalid after update"
         )
+
+
+def verify_token(x_authorization: Optional[str] = Header(None)) -> bool:
+    """
+    Verify authentication token from X-Authorization header.
+    Returns True if token is valid, raises HTTPException with 403 if not.
+    """
+    if not x_authorization:
+        raise HTTPException(status_code=403, detail="Authentication failed due to invalid or missing AuthenticationToken.")
+
+    # Check if token is in issued_tokens
+    if x_authorization not in issued_tokens:
+        raise HTTPException(status_code=403, detail="Authentication failed due to invalid or missing AuthenticationToken.")
+
+    return True
+
+
+@router.post("/artifact/byRegEx", response_model=List[ArtifactMetadata])
+def artifacts_by_regex(
+    body: ArtifactRegEx,
+    x_authorization: Optional[str] = Header(None),
+) -> List[ArtifactMetadata]:
+    """
+    Search for artifacts using a regular expression pattern.
+
+    The regex is applied to artifact names and README content.
+    Returns an array of ArtifactMetadata objects for matches.
+
+    Spec:
+      - Request: ArtifactRegEx with required 'regex' field
+      - Response: array of ArtifactMetadata
+      - Responses:
+          200: Success with matching artifacts (empty array if no matches)
+          400: Missing/invalid regex field or malformed regex pattern
+          403: Authentication failed
+          404: No artifacts found matching the regex
+    """
+    # Verify authentication
+    verify_token(x_authorization)
+
+    # Validate regex field
+    if not body.regex or not isinstance(body.regex, str) or body.regex.strip() == "":
+        raise HTTPException(status_code=400, detail="There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid")
+
+    # Try to compile the regex pattern
+    try:
+        pattern = re.compile(body.regex)
+    except re.error as e:
+        raise HTTPException(status_code=400, detail=f"There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid: {str(e)}")
+
+    # Get all artifacts
+    if not ARTIFACTS_DIR.exists():
+        return []
+
+    stored_artifacts = iter_all_artifacts()
+    results: List[ArtifactMetadata] = []
+    results_by_id: dict[str, ArtifactMetadata] = {}
+
+    # Search through all artifacts
+    for artifact in stored_artifacts:
+        md_raw = artifact.get("metadata", {})
+        data_raw = artifact.get("data", {})
+
+        try:
+            md = ArtifactMetadata(**md_raw)
+        except Exception:
+            # Skip malformed entries
+            continue
+
+        # Check if regex matches the artifact name
+        name_match = pattern.search(md.name or "")
+
+        # Check if regex matches README content if present
+        readme_match = False
+        if data_raw and isinstance(data_raw, dict):
+            readme = data_raw.get("readme") or data_raw.get("README")
+            if readme and isinstance(readme, str):
+                readme_match = pattern.search(readme)
+
+        # Add to results if either name or README matches
+        if name_match or readme_match:
+            results_by_id[md.id] = md
+
+    results = list(results_by_id.values())
+
+    # Per spec: return 404 if no artifacts match
+    if not results:
+        raise HTTPException(status_code=404, detail="No artifact found under this regex.")
+
+    return results
