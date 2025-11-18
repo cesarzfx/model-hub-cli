@@ -168,6 +168,38 @@ def list_artifacts(
     return list(results_by_id.values())
 
 
+# ---------- /artifact/byName/{name} (lookup by name) ----------
+
+
+@router.get("/artifact/byName/{name}", response_model=List[ArtifactMetadata])
+def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
+    """
+    Retrieve artifacts whose metadata.name matches the given name exactly.
+
+    Behavior:
+      - Returns a JSON array of ArtifactMetadata.
+      - If multiple artifacts share the same name, all are returned.
+      - If none match, returns an empty list (200).
+    """
+    if not ARTIFACTS_DIR.exists():
+        return []
+
+    stored_artifacts = iter_all_artifacts()
+    results: List[ArtifactMetadata] = []
+
+    for a in stored_artifacts:
+        md_raw = a.get("metadata", {})
+        try:
+            md = ArtifactMetadata(**md_raw)
+        except Exception:
+            continue
+
+        if md.name == name:
+            results.append(md)
+
+    return results
+
+
 # ---------- /artifact/{artifact_type} (create) ----------
 
 VALID_TYPES = {"model", "dataset", "code"}
