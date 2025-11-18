@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from pathlib import Path
@@ -129,10 +129,7 @@ def _ensure_model_artifact_or_404(artifact_id: str) -> dict:
 
 
 @router.get("/artifact/model/{id}/rate", response_model=ModelRating)
-def rate_model(
-    id: str,
-    x_authorization: Optional[str] = Header(default=None, alias="X-Authorization"),
-) -> ModelRating:
+def rate_model(id: str) -> ModelRating:
     """
     Get ratings for this model artifact. (BASELINE)
 
@@ -187,10 +184,7 @@ def rate_model(
 
 
 @router.get("/artifact/model/{id}/lineage", response_model=ArtifactLineageGraph)
-def get_lineage(
-    id: str,
-    x_authorization: Optional[str] = Header(default=None, alias="X-Authorization"),
-) -> ArtifactLineageGraph:
+def get_lineage(id: str) -> ArtifactLineageGraph:
     """
     Retrieve the lineage graph for this artifact. (BASELINE)
 
@@ -216,11 +210,7 @@ def get_lineage(
 
 
 @router.post("/artifact/model/{id}/license-check", response_model=bool)
-def license_check(
-    id: str,
-    request: SimpleLicenseCheckRequest,
-    x_authorization: Optional[str] = Header(default=None, alias="X-Authorization"),
-) -> bool:
+def license_check(id: str, request: SimpleLicenseCheckRequest) -> bool:
     """
     Assess license compatibility for fine-tune and inference usage. (BASELINE)
 
