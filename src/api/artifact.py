@@ -434,14 +434,14 @@ def artifacts_by_regex(
             continue
 
         # Check if regex matches the artifact name
-        name_match = pattern.search(md.name or "")
+        name_match = bool(pattern.search(md.name or ""))
 
         # Check if regex matches README content if present
         readme_match = False
         if data_raw and isinstance(data_raw, dict):
             readme = data_raw.get("readme") or data_raw.get("README")
             if readme and isinstance(readme, str):
-                readme_match = pattern.search(readme)
+                readme_match = bool(pattern.search(readme))
 
         # Add to results if either name or README matches
         if name_match or readme_match:

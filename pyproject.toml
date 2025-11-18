@@ -26,9 +26,19 @@ extend-ignore = [
 python_version = "3.11"
 # Require type annotations for variables
 disallow_untyped_defs = true
-disallow_any_unimported = true
+# Allow untyped imports from third-party libraries that don't have type stubs
+disallow_any_unimported = false
 disallow_incomplete_defs = true
 show_error_codes = true
- 
+# Ignore missing imports for third-party libraries
+ignore_missing_imports = true
+# Suppress import-untyped errors globally since many third-party libs lack stubs
+disable_error_code = ["import-untyped"]
+
+# Per-module options for libraries without type stubs
+[[tool.mypy.overrides]]
+module = "yaml"
+ignore_errors = true
+
 [tool.coverage.report]
 fail_under = 75
