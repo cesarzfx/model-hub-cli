@@ -223,16 +223,21 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
     raw_id = f"{artifact_type}:{artifact.url}"
     artifact_id = hashlib.md5(raw_id.encode("utf-8")).hexdigest()[:10]
 
-    url_str = artifact.url
-    if "/" in url_str:
-        name = url_str.rstrip("/").split("/")[-1] or url_str
+    # NEW: use the name from the request if present
+    if artifact.name and artifact.name.strip():
+        name = artifact.name.strip()
     else:
-        name = url_str
+        url_str = artifact.url
+        if "/" in url_str:
+            name = url_str.rstrip("/").split("/")[-1] or url_str
+        else:
+            name = url_str
 
+    # existing duplicate check
     for existing in iter_all_artifacts():
         md = existing.get("metadata", {})
         data = existing.get("data", {})
-        if md.get("type") == artifact_type and data.get("url") == url_str:
+        if md.get("type") == artifact_type and data.get("url") == artifact.url:
             raise HTTPException(status_code=409, detail="Artifact exists already")
 
     data_obj = ArtifactData(url=artifact.url, download_url=artifact.url)
@@ -241,7 +246,6 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
     artifact_obj = Artifact(metadata=metadata, data=data_obj)
 
     store_artifact(artifact_id, artifact_obj.dict())
-
     return artifact_obj
 
 
