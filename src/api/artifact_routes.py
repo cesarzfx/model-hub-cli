@@ -26,7 +26,7 @@ from .artifact_store import (
 router = APIRouter()
 
 
-# ------------------ /artifacts POST ------------------ #
+# ------------------ POST /artifacts ------------------ #
 
 
 @router.post("/artifacts", response_model=List[ArtifactMetadata])
@@ -37,12 +37,11 @@ def list_artifacts(
 ) -> List[ArtifactMetadata]:
     response.headers["offset"] = offset or "0"
 
-    # If there is no storage directory yet, either:
-    #  - wildcard queries return empty list
-    #  - name queries return 404 (no such artifact)
     if not ARTIFACTS_DIR.exists():
+        # No artifacts stored yet.
         if not query:
             return []
+        # For non-wildcard queries, behave as "no such artifact".
         for q in query:
             if q.name != "*":
                 raise HTTPException(status_code=404, detail="No such artifact")
@@ -53,7 +52,7 @@ def list_artifacts(
     seen_ids: Set[str] = set()
 
     for q in query:
-        # Validate q.types entries if present
+        # Validate requested types
         if q.types:
             for t in q.types:
                 if t not in VALID_TYPES:
@@ -62,7 +61,7 @@ def list_artifacts(
                         detail=f"Invalid artifact type in query: {t}",
                     )
 
-        # Wildcard: list all artifacts (optionally filtered by type)
+        # Wildcard query: enumerate all artifacts (optionally filtered by type)
         if q.name == "*":
             for a in stored_artifacts:
                 md_raw = a.get("metadata", {})
@@ -78,7 +77,7 @@ def list_artifacts(
                     seen_ids.add(md.id)
                     results.append(md)
 
-        # Name-specific query: exact name match, optional type filter
+        # Name-specific query: exact match on metadata.name (+ optional type)
         else:
             best: Optional[ArtifactMetadata] = None
 
@@ -91,17 +90,15 @@ def list_artifacts(
 
                 if md.name != q.name:
                     continue
+
                 if q.types and md.type not in q.types:
                     continue
 
-                # If multiple artifacts share the same name, pick the one
-                # with lexicographically smallest id, for deterministic behavior.
+                # If multiple artifacts share the same name, pick smallest id
                 if best is None or md.id < best.id:
                     best = md
 
             if best is None:
-                # For any name query that finds no artifact, the autograder
-                # expects a 404.
                 raise HTTPException(status_code=404, detail="No such artifact")
 
             results.append(best)
@@ -109,14 +106,12 @@ def list_artifacts(
     return results
 
 
-# ------------------ /artifact/byName/{name} ------------------ #
+# ------------------ GET /artifact/byName/{name} ------------------ #
 
 
 @router.get("/artifact/byName/{name}", response_model=List[ArtifactMetadata])
 def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
-    """
-    Retrieve all artifacts whose metadata.name exactly matches the given name.
-    """
+    """Return all artifacts whose metadata.name exactly matches `name`."""
     if not ARTIFACTS_DIR.exists():
         raise HTTPException(status_code=404, detail="No such artifact")
 
@@ -139,14 +134,11 @@ def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
     return results
 
 
-# ------------------ /artifact/byRegEx ------------------ #
+# ------------------ POST /artifact/byRegEx ------------------ #
 
 
 @router.post("/artifact/byRegEx", response_model=List[ArtifactMetadata])
 def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
-    """
-    Retrieve artifacts whose metadata.name matches the given regular expression.
-    """
     if not ARTIFACTS_DIR.exists():
         raise HTTPException(
             status_code=404, detail="No artifact found under this regex"
@@ -154,19 +146,17 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
 
     raw = payload.regex
 
-    # Strip ^ and $ for simple exact-match patterns so that we can special-case
-    # "regex" queries that are really just names.
+    # Try to detect simple "name-like" patterns such as ^foo$ or foo, and
+    # treat them as exact-name queries to match spec examples.
     stripped = raw
     if stripped.startswith("^"):
         stripped = stripped[1:]
     if stripped.endswith("$"):
         stripped = stripped[:-1]
 
-    # If the stripped pattern is a simple "name-like" string, treat it as an
-    # exact name match (this matches the spec examples).
-    if stripped and re.fullmatch(r"[A-Za-z0-9._\\-]+", stripped):
+    if stripped and re.fullmatch(r"[A-Za-z0-9._\-]+", stripped):
         stored = iter_all_artifacts()
-        results_exact: List[ArtifactMetadata] = []
+        exact_results: List[ArtifactMetadata] = []
 
         for a in stored:
             md_raw = a.get("metadata", {})
@@ -176,23 +166,23 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
                 continue
 
             if md.name == stripped:
-                results_exact.append(md)
+                exact_results.append(md)
 
-        if not results_exact:
+        if not exact_results:
             raise HTTPException(
                 status_code=404, detail="No artifact found under this regex"
             )
 
-        return results_exact
+        return exact_results
 
-    # Otherwise, treat the input as a full regular expression
+    # Otherwise, treat payload.regex as a full regex
     try:
         pattern = re.compile(raw)
     except re.error:
         raise HTTPException(status_code=400, detail="Invalid regular expression")
 
     stored = iter_all_artifacts()
-    results_regex: List[ArtifactMetadata] = []
+    regex_results: List[ArtifactMetadata] = []
 
     for a in stored:
         md_raw = a.get("metadata", {})
@@ -202,29 +192,20 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
             continue
 
         if pattern.search(md.name):
-            results_regex.append(md)
+            regex_results.append(md)
 
-    if not results_regex:
+    if not regex_results:
         raise HTTPException(
             status_code=404, detail="No artifact found under this regex"
         )
 
-    return results_regex
+    return regex_results
 
 
-# ------------------ Helper: derive canonical name from URL ------------------ #
+# ------------------ Helper: derive name from URL ------------------ #
 
 
 def derive_artifact_name(url: str) -> str:
-    """Derive a canonical artifact name from the source URL.
-
-    Heuristics based on the project spec examples and autograder hints:
-      - GitHub:  {owner}-{repo}, e.g. https://github.com/openai/whisper -> openai-whisper
-      - Hugging Face: model name (second path segment), e.g.
-            https://huggingface.co/google-bert/bert-base-uncased -> bert-base-uncased
-            https://huggingface.co/openai/whisper-tiny/tree/main -> whisper-tiny
-      - Default: last non-empty path segment, or the whole URL if the path is empty.
-    """
     parsed = urlparse(url)
     host = parsed.netloc
     path_parts = [p for p in parsed.path.split("/") if p]
@@ -237,7 +218,6 @@ def derive_artifact_name(url: str) -> str:
     # Hugging Face: https://huggingface.co/{org}/{model}[...]
     if host.endswith("huggingface.co"):
         if len(path_parts) >= 2:
-            # Typically /org/model/...; we want the model name
             return path_parts[1]
         elif path_parts:
             return path_parts[-1]
@@ -253,22 +233,19 @@ def derive_artifact_name(url: str) -> str:
 
 @router.post("/artifact/{artifact_type}", response_model=Artifact, status_code=201)
 def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
-    """
-    Ingest a new artifact.
-
-    - artifact_type must be one of VALID_TYPES.
-    - The artifact_id is a deterministic hash of "{artifact_type}:{url}" so that
-      repeated uploads of the same url + type yield the same id.
-    - The ArtifactMetadata.name is derived from the URL using derive_artifact_name().
-    """
     if artifact_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail="Invalid artifact_type")
 
-    raw_id = f"{artifact_type}:{artifact.url}"
+    url_str = artifact.url
+    raw_id = f"{artifact_type}:{url_str}"
     artifact_id = hashlib.md5(raw_id.encode("utf-8")).hexdigest()[:10]
 
-    url_str = artifact.url
-    name = derive_artifact_name(url_str)
+    # Prefer client-provided name if present; otherwise derive from URL.
+    provided_name = getattr(artifact, "name", None)
+    if provided_name and provided_name.strip():
+        name = provided_name.strip()
+    else:
+        name = derive_artifact_name(url_str)
 
     # Prevent duplicates: same type + url -> 409
     for existing in iter_all_artifacts():
@@ -277,14 +254,12 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
         if md.get("type") == artifact_type and data.get("url") == url_str:
             raise HTTPException(status_code=409, detail="Artifact exists already")
 
-    # Data section: url and an internal download_url (for now equal to source url)
-    data_obj = ArtifactData(url=artifact.url, download_url=artifact.url)
+    data_obj = ArtifactData(url=url_str, download_url=url_str, name=provided_name)
 
     metadata = ArtifactMetadata(name=name, id=artifact_id, type=artifact_type)
     artifact_obj = Artifact(metadata=metadata, data=data_obj)
 
     store_artifact(artifact_id, artifact_obj.dict())
-
     return artifact_obj
 
 
@@ -293,6 +268,7 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
 
 @router.get("/artifacts/{artifact_type}/{id}", response_model=Artifact)
 def get_artifact(artifact_type: str, id: str) -> Artifact:
+    """Fetch a single artifact by type and id."""
     if artifact_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail="Invalid artifact_type")
     if not ARTIFACT_ID_PATTERN.fullmatch(id):
@@ -304,7 +280,6 @@ def get_artifact(artifact_type: str, id: str) -> Artifact:
 
     md = stored.get("metadata", {})
     if md.get("type") != artifact_type:
-        # Type mismatch for this id
         raise HTTPException(status_code=400, detail="Artifact type mismatch")
 
     try:
@@ -317,7 +292,8 @@ def get_artifact(artifact_type: str, id: str) -> Artifact:
 
 
 @router.delete("/artifacts/{artifact_type}/{id}")
-def delete_artifact(artifact_type: str, id: str) -> Dict[str, str]:
+def delete_artifact(artifact_type: str, id: str) -> Response:
+    """Delete an artifact if it exists and type matches."""
     if artifact_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail="Invalid artifact_type")
     if not ARTIFACT_ID_PATTERN.fullmatch(id):
@@ -327,7 +303,6 @@ def delete_artifact(artifact_type: str, id: str) -> Dict[str, str]:
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="Artifact does not exist")
 
-    # Optional: verify stored type matches path type
     stored = get_stored_artifact(id)
     if stored:
         md = stored.get("metadata", {})
@@ -335,7 +310,7 @@ def delete_artifact(artifact_type: str, id: str) -> Dict[str, str]:
             raise HTTPException(status_code=400, detail="Artifact type mismatch")
 
     filepath.unlink()
-    return {"status": "deleted"}
+    return Response(status_code=200)
 
 
 # ------------------ GET /artifact/{artifact_type}/{id}/cost ------------------ #
@@ -350,8 +325,7 @@ def get_artifact_cost(
     id: str,
     dependency: bool = False,
 ) -> Dict[str, ArtifactCostEntry]:
-    """
-    Compute storage cost for an artifact.
+    """Compute storage cost for an artifact.
 
     - If dependency == false:
         return {id: {total_cost: base_cost}}
