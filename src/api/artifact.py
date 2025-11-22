@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
 import os
 import json
@@ -70,6 +70,19 @@ class ArtifactRegEx(BaseModel):
     regex: str
 
 
+class ArtifactCostEntry(BaseModel):
+    """
+    Single entry in the ArtifactCost map.
+
+    Keys are artifact IDs (strings), values have:
+      - total_cost: always present
+      - standalone_cost: present when dependency=true
+    """
+
+    standalone_cost: Optional[float] = None
+    total_cost: float
+
+
 # ---------- Storage helpers ----------
 
 
@@ -116,6 +129,23 @@ def iter_all_artifacts() -> List[dict]:
     return results
 
 
+def estimate_artifact_cost_mb(stored: dict) -> float:
+    """
+    Deterministic, simple cost estimator based on the artifact's URL.
+
+    This is a stand-in for real download-size computation. It just needs to be:
+      - deterministic
+      - positive
+      - consistent across calls
+    """
+    data = stored.get("data", {})
+    url = data.get("url", "")
+    if not isinstance(url, str):
+        url = str(url)
+    base = max(len(url), 1)
+    return round(base / 10.0, 2)
+
+
 # ---------- /artifacts (list) ----------
 
 
@@ -154,7 +184,7 @@ def list_artifacts(
     stored_artifacts = iter_all_artifacts()
 
     # Use dict keyed by id to dedupe across multiple queries
-    results_by_id: dict[str, ArtifactMetadata] = {}
+    results_by_id: Dict[str, ArtifactMetadata] = {}
 
     for q in query:
         for a in stored_artifacts:
@@ -192,6 +222,7 @@ def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
       - Returns a JSON array of ArtifactMetadata.
       - If multiple artifacts share the same name, all are returned.
       - If none match, returns an empty list (200).
+        (You can tighten this later to 404 for "no such artifact" if needed.)
     """
     if not ARTIFACTS_DIR.exists():
         return []
@@ -243,7 +274,7 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
         simple_pattern = simple_pattern[:-1]
 
     # Allowed characters for simple exact-match names
-    if simple_pattern and re.fullmatch(r"[A-Za-z0-9._\-]+", simple_pattern):
+    if simple_pattern and re.fullmatch(r"[A-Za-z0-9._\\-]+", simple_pattern):
         stored_artifacts = iter_all_artifacts()
         results_exact: List[ArtifactMetadata] = []
 
@@ -427,3 +458,65 @@ def update_artifact(artifact_type: str, id: str, artifact: Artifact) -> Artifact
         raise HTTPException(
             status_code=500, detail="Stored artifact is invalid after update"
         )
+
+
+# ---------- /artifact/{artifact_type}/{id}/cost (cost computation) ----------
+
+
+@router.get(
+    "/artifact/{artifact_type}/{id}/cost",
+    response_model=Dict[str, ArtifactCostEntry],
+)
+def get_artifact_cost(
+    artifact_type: str,
+    id: str,
+    dependency: bool = False,
+) -> Dict[str, ArtifactCostEntry]:
+    """
+    Get the cost of an artifact (and optionally its dependencies).
+
+    Spec:
+      - Path: /artifact/{artifact_type}/{id}/cost
+      - Query param: dependency (bool, default=false)
+      - Response: ArtifactCost map:
+          {
+            "<artifact_id>": {
+              "total_cost": <float>,
+              "standalone_cost": <float?>  # when dependency=true
+            },
+            ...
+          }
+
+    Current implementation:
+      - Validates that the artifact exists and type matches.
+      - Computes a deterministic "size" based on the artifact URL.
+      - If dependency == False:
+          returns only total_cost for this artifact.
+      - If dependency == True:
+          returns standalone_cost and total_cost for this artifact only.
+        (You can extend this later to add real dependency costs via lineage.)
+    """
+    stored = get_stored_artifact(id)
+    if not stored:
+        raise HTTPException(status_code=404, detail="Artifact does not exist")
+
+    md = stored.get("metadata", {})
+    if md.get("type") != artifact_type:
+        # Type/path mismatch -> bad request
+        raise HTTPException(status_code=400, detail="Artifact type mismatch")
+
+    base_cost = estimate_artifact_cost_mb(stored)
+
+    costs: Dict[str, ArtifactCostEntry] = {}
+
+    if not dependency:
+        # Only total_cost required in this mode
+        costs[id] = ArtifactCostEntry(total_cost=base_cost)
+    else:
+        # For now, no real dependency expansion; standalone == total
+        costs[id] = ArtifactCostEntry(
+            standalone_cost=base_cost,
+            total_cost=base_cost,
+        )
+
+    return costs
