@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import yaml
-from .artifact import router as artifact_router
+from .artifact_routes import router as artifact_router
 from .model import router as model_router
 from .reset import router as reset_router
 from .health import router as health_router
