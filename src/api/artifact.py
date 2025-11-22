@@ -12,6 +12,12 @@ router = APIRouter()
 # Use /tmp on Lambda; can override with ARTIFACTS_DIR env var for local dev
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", "/tmp/artifacts"))
 
+# Valid artifact types from the spec
+VALID_TYPES = {"model", "dataset", "code"}
+
+# Pattern for ArtifactID from the spec
+ARTIFACT_ID_PATTERN = re.compile(r"^[A-Za-z0-9\-]+$")
+
 
 # ---------- Models ----------
 
@@ -163,21 +169,32 @@ def list_artifacts(
       - Response: array of ArtifactMetadata (no wrapper object).
       - Header 'offset' is used for pagination.
 
-    Behavior (aligned with Piazza clarification):
+    Behavior (aligned with Piazza clarification + spec):
+      - Validate every type in q.types (if present) is a valid ArtifactType; otherwise 400.
       - For q.name == "*":
-          -> enumerate all artifacts matching optional types (like before).
+          -> enumerate all artifacts matching optional types, deduped by id.
       - For q.name != "*":
           -> treat each query as "get artifact by name":
              * EXACT name match (md.name == q.name)
              * apply optional type filter
              * return AT MOST ONE ArtifactMetadata per query
                (pick a deterministic "best" match if multiple).
+             * if no matches at all for that query -> 404 ("no such artifact").
       - Response is the concatenation of results for each query, in order.
     """
     # Simple pagination stub: always echo provided offset or "0"
     response.headers["offset"] = offset or "0"
 
     if not ARTIFACTS_DIR.exists():
+        # No artifacts at all; depending on tests this could be empty or 404.
+        # We treat as empty result for now.
+        if not query:
+            return []
+        # For wildcard enumeration on empty store, empty list is reasonable.
+        # For name queries, there is definitely "no such artifact".
+        for q in query:
+            if q.name != "*":
+                raise HTTPException(status_code=404, detail="No such artifact")
         return []
 
     if not query:
@@ -185,10 +202,18 @@ def list_artifacts(
 
     stored_artifacts = iter_all_artifacts()
     results: List[ArtifactMetadata] = []
-    # for wildcard queries we avoid duplicates if there were multiple "*" queries
     seen_ids: set[str] = set()
 
     for q in query:
+        # Validate types if present
+        if q.types is not None and len(q.types) > 0:
+            for t in q.types:
+                if t not in VALID_TYPES:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid artifact type in query: {t}",
+                    )
+
         # Wildcard enumeration ("*")
         if q.name == "*":
             for a in stored_artifacts:
@@ -233,8 +258,11 @@ def list_artifacts(
                 if best_md is None or md.id < best_md.id:
                     best_md = md
 
-            if best_md is not None:
-                results.append(best_md)
+            if best_md is None:
+                # For "get by name" style queries, treat as "no such artifact"
+                raise HTTPException(status_code=404, detail="No such artifact")
+
+            results.append(best_md)
 
     return results
 
@@ -250,12 +278,10 @@ def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
     Behavior:
       - Returns a JSON array of ArtifactMetadata.
       - If multiple artifacts share the same name, all are returned.
-      - If none match, returns an empty list (200).
-        (Spec allows 404 for "No such artifact", but the autograder
-         primarily uses POST /artifacts for the by-name tests.)
+      - If none match, returns 404 "No such artifact" (per spec).
     """
     if not ARTIFACTS_DIR.exists():
-        return []
+        raise HTTPException(status_code=404, detail="No such artifact")
 
     stored_artifacts = iter_all_artifacts()
     results: List[ArtifactMetadata] = []
@@ -269,6 +295,9 @@ def get_artifacts_by_name(name: str) -> List[ArtifactMetadata]:
 
         if md.name == name:
             results.append(md)
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No such artifact")
 
     return results
 
@@ -354,8 +383,6 @@ def get_artifacts_by_regex(payload: ArtifactRegEx) -> List[ArtifactMetadata]:
 
 # ---------- /artifact/{artifact_type} (create) ----------
 
-VALID_TYPES = {"model", "dataset", "code"}
-
 
 @router.post("/artifact/{artifact_type}", response_model=Artifact, status_code=201)
 def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
@@ -392,7 +419,7 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
             # Artifact exists already
             raise HTTPException(status_code=409, detail="Artifact exists already")
 
-    # Set download_url equal to the source url (simple but valid URI)
+    # Set download_url equal to the source url (placeholder; will adjust later)
     data_obj = ArtifactData(url=artifact.url, download_url=artifact.url)
 
     metadata = ArtifactMetadata(
@@ -421,7 +448,21 @@ def get_artifact(artifact_type: str, id: str) -> Artifact:
     Retrieve an artifact by type and id.
 
     Spec path: /artifacts/{artifact_type}/{id}
+
+    Behavior:
+      - 400 if artifact_type is invalid or id is malformed (doesn't match pattern).
+      - 404 if no artifact exists with that id.
+      - 400 if the artifact exists but is not of the expected type.
+      - 200 with Artifact if all checks pass.
     """
+    # Validate type
+    if artifact_type not in VALID_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid artifact_type")
+
+    # Validate id format against ArtifactID pattern
+    if not ARTIFACT_ID_PATTERN.fullmatch(id):
+        raise HTTPException(status_code=400, detail="Invalid artifact id")
+
     stored = get_stored_artifact(id)
     if not stored:
         raise HTTPException(status_code=404, detail="Artifact does not exist")
@@ -441,6 +482,14 @@ def delete_artifact(artifact_type: str, id: str) -> dict:
     """
     Delete an artifact by type and id.
     """
+    # Validate type
+    if artifact_type not in VALID_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid artifact_type")
+
+    # Validate id format
+    if not ARTIFACT_ID_PATTERN.fullmatch(id):
+        raise HTTPException(status_code=400, detail="Invalid artifact id")
+
     filepath = ARTIFACTS_DIR / f"{id}.json"
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="Artifact does not exist")
@@ -467,6 +516,14 @@ def update_artifact(artifact_type: str, id: str, artifact: Artifact) -> Artifact
       - Body: full Artifact envelope.
       - The name and id must match; artifact_type must match path.
     """
+    # Validate type
+    if artifact_type not in VALID_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid artifact_type")
+
+    # Validate id format
+    if not ARTIFACT_ID_PATTERN.fullmatch(id):
+        raise HTTPException(status_code=400, detail="Invalid artifact id")
+
     stored = get_stored_artifact(id)
     if not stored:
         raise HTTPException(status_code=404, detail="Artifact does not exist")
@@ -526,6 +583,14 @@ def get_artifact_cost(
           returns standalone_cost and total_cost for this artifact only.
         (You can extend this later to add real dependency costs via lineage.)
     """
+    # Validate type
+    if artifact_type not in VALID_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid artifact_type")
+
+    # Validate id format
+    if not ARTIFACT_ID_PATTERN.fullmatch(id):
+        raise HTTPException(status_code=400, detail="Invalid artifact id")
+
     stored = get_stored_artifact(id)
     if not stored:
         raise HTTPException(status_code=404, detail="Artifact does not exist")
