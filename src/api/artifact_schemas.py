@@ -13,7 +13,6 @@ ARTIFACT_ID_PATTERN = re.compile(r"^[A-Za-z0-9\-]+$")
 class ArtifactData(BaseModel):
     url: str
     download_url: Optional[str] = None
-    name: Optional[str] = None
 
 
 class ArtifactMetadata(BaseModel):
