@@ -26,6 +26,12 @@ from .artifact_store import (
 router = APIRouter()
 
 
+def _compute_download_url(source_url: str) -> str:
+    if not isinstance(source_url, str):
+        return str(source_url)
+    return source_url
+
+
 # ------------------ POST /artifacts ------------------ #
 
 
@@ -254,11 +260,15 @@ def create_artifact(artifact_type: str, artifact: ArtifactData) -> Artifact:
         if md.get("type") == artifact_type and data.get("url") == url_str:
             raise HTTPException(status_code=409, detail="Artifact exists already")
 
-    data_obj = ArtifactData(url=url_str, download_url=url_str, name=provided_name)
+    # Compute download_url via a helper so its semantics are centralized
+    data_obj = ArtifactData(
+        url=url_str,
+        download_url=_compute_download_url(url_str),
+        name=provided_name,
+    )
 
     metadata = ArtifactMetadata(name=name, id=artifact_id, type=artifact_type)
     artifact_obj = Artifact(metadata=metadata, data=data_obj)
-
     store_artifact(artifact_id, artifact_obj.dict())
     return artifact_obj
 

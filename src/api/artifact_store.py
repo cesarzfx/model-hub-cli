@@ -39,7 +39,7 @@ def iter_all_artifacts() -> List[dict]:
         return []
 
     results: List[dict] = []
-    for filename in os.listdir(ARTIFACTS_DIR):
+    for filename in sorted(os.listdir(ARTIFACTS_DIR)):
         if not filename.endswith(".json"):
             continue
 
