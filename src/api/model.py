@@ -1,18 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional
 from pathlib import Path
 import os
 import json
-import time
-from threading import Lock
 
 router = APIRouter()
 
+# Must match the directory used by artifact.py
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", "/tmp/artifacts"))
-
-_artifact_cache: Dict[str, dict] = {}
-_cache_lock = Lock()
+# Ensure the directory exists so that file operations are well-defined.
+ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ----- Schemas mirroring OpenAPI components where needed -----
@@ -95,11 +93,8 @@ class SimpleLicenseCheckRequest(BaseModel):
 # ----- Helper to read artifacts from storage -----
 
 
-def _load_artifact_from_disk(artifact_id: str) -> Optional[dict]:
-    """
-    Low-level loader that reads a stored artifact JSON document from disk.
-    Returns None if not found or malformed.
-    """
+def _load_artifact(artifact_id: str) -> Optional[dict]:
+
     filepath = ARTIFACTS_DIR / f"{artifact_id}.json"
     if not filepath.exists():
         return None
@@ -108,46 +103,11 @@ def _load_artifact_from_disk(artifact_id: str) -> Optional[dict]:
         with filepath.open("r") as f:
             data = json.load(f)
     except json.JSONDecodeError:
+        # Malformed JSON: treat as missing / invalid artifact.
         return None
 
     if not isinstance(data, dict):
         return None
-
-    return data
-
-
-def _load_artifact(artifact_id: str) -> Optional[dict]:
-    """
-    Load a stored artifact JSON document written by src/api/artifact.py.
-
-    This function is designed to be robust under high concurrency:
-    - Uses an in-memory cache to avoid repeated disk reads.
-    - Retries a few times if the file is temporarily not readable / malformed.
-    """
-    # First, check cache without holding the lock for long.
-    with _cache_lock:
-        cached = _artifact_cache.get(artifact_id)
-    if cached is not None:
-        return cached
-
-    # Not in cache; try reading from disk with a few short retries in case
-    # another process/thread is still writing the file.
-    retries = 3
-    delay_seconds = 0.01  # 10 ms
-
-    data: Optional[dict] = None
-    for attempt in range(retries):
-        data = _load_artifact_from_disk(artifact_id)
-        if data is not None:
-            break
-        time.sleep(delay_seconds)
-
-    if data is None:
-        return None
-
-    # Store in cache so concurrent /rate requests reuse the same object.
-    with _cache_lock:
-        _artifact_cache[artifact_id] = data
 
     return data
 
