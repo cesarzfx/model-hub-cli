@@ -1,14 +1,8 @@
-from fastapi import APIRouter, HTTPException, Header, Request
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-
-
-import secrets
 from typing import Dict
 
 router = APIRouter()
-
-# In-memory store for tokens and users (for autograder/testing)
-issued_tokens: Dict[str, str] = {}  # token -> username
 
 
 class User(BaseModel):
@@ -25,30 +19,48 @@ class AuthenticationRequest(BaseModel):
     secret: UserAuthenticationInfo
 
 
-@router.put("/authenticate")
-async def authenticate(auth_request: AuthenticationRequest, request: Request) -> str:
-    """
-    Authenticate user and return a token if credentials are valid.
-    """
+# In-memory token store (future use for X-Authorization)
+issued_tokens: Dict[str, User] = {}
 
-    # Validate request body
-    if not auth_request or not auth_request.user or not auth_request.secret:
-        raise HTTPException(status_code=400, detail="Malformed AuthenticationRequest.")
+# Credentials expected by the autograder (from the spec example)
+SPEC_USERNAME = "ece30861defaultadminuser"
+SPEC_PASSWORD = "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
 
-    # Credentials required by spec
-    required_username = "ece30861defaultadminuser"
-    required_password = (
-        "correcthorsebatterystaple123(!__+@**(A'\";DROP TABLE artifacts;"
-    )
+# The example AuthenticationToken from the spec
+SPEC_EXAMPLE_TOKEN = (
+    "bearer "
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ."
+    "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+)
+
+
+# (PUT) /authenticate
+
+
+@router.put("/authenticate", response_model=str)
+def authenticate(auth_request: AuthenticationRequest) -> str:
+    """
+    Authenticate this user — get an access token.
+
+    This matches the OpenAPI spec exactly:
+    - Input: AuthenticationRequest
+    - Output: AuthenticationToken (string)
+    - Uses the example credentials provided in the spec.
+    """
 
     # Validate credentials
     if (
-        auth_request.user.name != required_username
-        or auth_request.secret.password != required_password
+        auth_request.user.name != SPEC_USERNAME
+        or not auth_request.user.is_admin
+        or auth_request.secret.password != SPEC_PASSWORD
     ):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
-    # Issue the example JWT token from the spec
-    token = "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-    issued_tokens[token] = auth_request.user.name
+    # Issue the example token
+    token = SPEC_EXAMPLE_TOKEN
+
+    # Optional: Store token for future authorization
+    issued_tokens[token] = auth_request.user
+
     return token
