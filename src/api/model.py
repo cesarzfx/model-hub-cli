@@ -125,6 +125,32 @@ def _ensure_model_artifact_or_404(artifact_id: str) -> dict:
     return stored
 
 
+# ----- Rating helpers -----
+
+
+def _base_score_from_artifact(stored: dict) -> float:
+    """
+    Deterministic base score in [0.0, 1.0) derived from the artifact URL.
+
+    This keeps ratings:
+    - stable across runs,
+    - different per model,
+    - and within a sane range for all metrics.
+    """
+    data = stored.get("data", {}) or {}
+    url = data.get("url", "")
+
+    if not isinstance(url, str):
+        url = str(url)
+
+    # Simple deterministic function of URL length
+    base = (len(url) % 50) / 50.0  # 0.0 <= base < 1.0
+    # Avoid exact 0.0 so everything is clearly "set"
+    if base == 0.0:
+        base = 0.1
+    return round(base, 3)
+
+
 # ----- Endpoints -----
 
 
@@ -133,22 +159,23 @@ def rate_model(id: str) -> ModelRating:
     """
     Get ratings for this model artifact. (BASELINE)
 
-    We compute a simple synthetic rating with fixed values.
-    The important part is that the response matches the ModelRating schema.
+    We compute a simple synthetic rating that:
+    - Fills *all* fields required by the ModelRating schema.
+    - Uses a deterministic base score per model derived from its URL.
+    - Uses small, non-zero latencies for all metrics.
     """
     stored = _ensure_model_artifact_or_404(id)
-    metadata = stored.get("metadata", {})
+    metadata = stored.get("metadata", {}) or {}
     name = metadata.get("name", f"model-{id}")
 
-    # Dummy but valid scores in [0, 1] range, with small non-zero latencies.
-    base_score = 0.8
-    latency = 0.01
+    base_score = _base_score_from_artifact(stored)
+    latency = 0.01  # small positive float
 
     size_score = SizeScore(
-        raspberry_pi=0.6,
-        jetson_nano=0.7,
-        desktop_pc=0.9,
-        aws_server=1.0,
+        raspberry_pi=base_score,
+        jetson_nano=base_score,
+        desktop_pc=base_score,
+        aws_server=base_score,
     )
 
     rating = ModelRating(
