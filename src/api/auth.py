@@ -4,6 +4,8 @@ from typing import Dict
 
 router = APIRouter()
 
+# ---------------- Schemas ---------------- #
+
 
 class User(BaseModel):
     name: str
@@ -19,14 +21,12 @@ class AuthenticationRequest(BaseModel):
     secret: UserAuthenticationInfo
 
 
-# In-memory token store (future use for X-Authorization)
+# ------------- Token / credential config ------------- #
+
 issued_tokens: Dict[str, User] = {}
 
-# Credentials expected by the autograder (from the spec example)
 SPEC_USERNAME = "ece30861defaultadminuser"
 SPEC_PASSWORD = "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
-
-# The example AuthenticationToken from the spec
 SPEC_EXAMPLE_TOKEN = (
     "bearer "
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
@@ -35,21 +35,18 @@ SPEC_EXAMPLE_TOKEN = (
 )
 
 
-# (PUT) /authenticate
+# ---------------- Route ---------------- #
 
 
 @router.put("/authenticate", response_model=str)
 def authenticate(auth_request: AuthenticationRequest) -> str:
     """
-    Authenticate this user — get an access token.
+    Authenticate this user -- get an access token.
 
-    This matches the OpenAPI spec exactly:
-    - Input: AuthenticationRequest
-    - Output: AuthenticationToken (string)
-    - Uses the example credentials provided in the spec.
+    - 200: returns AuthenticationToken (string) on valid creds
+    - 401: invalid username or password
     """
 
-    # Validate credentials
     if (
         auth_request.user.name != SPEC_USERNAME
         or not auth_request.user.is_admin
@@ -57,10 +54,6 @@ def authenticate(auth_request: AuthenticationRequest) -> str:
     ):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
-    # Issue the example token
     token = SPEC_EXAMPLE_TOKEN
-
-    # Optional: Store token for future authorization
     issued_tokens[token] = auth_request.user
-
     return token
