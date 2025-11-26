@@ -1,14 +1,18 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
 import os
 import json
+import time
+from threading import Lock
 
 router = APIRouter()
 
-# Must match the directory used by artifact.py
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", "/tmp/artifacts"))
+
+_artifact_cache: Dict[str, dict] = {}
+_cache_lock = Lock()
 
 
 # ----- Schemas mirroring OpenAPI components where needed -----
@@ -91,21 +95,60 @@ class SimpleLicenseCheckRequest(BaseModel):
 # ----- Helper to read artifacts from storage -----
 
 
-def _load_artifact(artifact_id: str) -> Optional[dict]:
+def _load_artifact_from_disk(artifact_id: str) -> Optional[dict]:
     """
-    Load a stored artifact JSON document written by src/api/artifact.py.
+    Low-level loader that reads a stored artifact JSON document from disk.
     Returns None if not found or malformed.
     """
     filepath = ARTIFACTS_DIR / f"{artifact_id}.json"
     if not filepath.exists():
         return None
+
     try:
         with filepath.open("r") as f:
             data = json.load(f)
     except json.JSONDecodeError:
         return None
+
     if not isinstance(data, dict):
         return None
+
+    return data
+
+
+def _load_artifact(artifact_id: str) -> Optional[dict]:
+    """
+    Load a stored artifact JSON document written by src/api/artifact.py.
+
+    This function is designed to be robust under high concurrency:
+    - Uses an in-memory cache to avoid repeated disk reads.
+    - Retries a few times if the file is temporarily not readable / malformed.
+    """
+    # First, check cache without holding the lock for long.
+    with _cache_lock:
+        cached = _artifact_cache.get(artifact_id)
+    if cached is not None:
+        return cached
+
+    # Not in cache; try reading from disk with a few short retries in case
+    # another process/thread is still writing the file.
+    retries = 3
+    delay_seconds = 0.01  # 10 ms
+
+    data: Optional[dict] = None
+    for attempt in range(retries):
+        data = _load_artifact_from_disk(artifact_id)
+        if data is not None:
+            break
+        time.sleep(delay_seconds)
+
+    if data is None:
+        return None
+
+    # Store in cache so concurrent /rate requests reuse the same object.
+    with _cache_lock:
+        _artifact_cache[artifact_id] = data
+
     return data
 
 
@@ -156,14 +199,6 @@ def _base_score_from_artifact(stored: dict) -> float:
 
 @router.get("/artifact/model/{id}/rate", response_model=ModelRating)
 def rate_model(id: str) -> ModelRating:
-    """
-    Get ratings for this model artifact. (BASELINE)
-
-    We compute a simple synthetic rating that:
-    - Fills *all* fields required by the ModelRating schema.
-    - Uses a deterministic base score per model derived from its URL.
-    - Uses small, non-zero latencies for all metrics.
-    """
     stored = _ensure_model_artifact_or_404(id)
     metadata = stored.get("metadata", {}) or {}
     name = metadata.get("name", f"model-{id}")
