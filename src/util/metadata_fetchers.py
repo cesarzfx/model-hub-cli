@@ -213,8 +213,8 @@ class GitHubFetcher(MetadataFetcher):
             # Fetch recent commit activity
             commits_url = f"{self.BASE_API_URL}/{owner}/{repo}/commits"
             logger.debug(f"Fetching GitHub commits from: {commits_url}")
-            params = {"per_page": 100}
-            commits_resp = self.session.get(commits_url, params=params, headers=headers)
+            commit_params = {"per_page": 100}
+            commits_resp = self.session.get(commits_url, params=commit_params, headers=headers)
             if commits_resp.ok:
                 commits = commits_resp.json()
                 metadata["commits_count"] = len(commits)
@@ -226,8 +226,8 @@ class GitHubFetcher(MetadataFetcher):
             # Fetch pull requests for reviewedness metric
             pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
             logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
-            params = {"state": "closed", "per_page": 100}
-            pulls_resp = self.session.get(pulls_url, params=params, headers=headers)
+            pull_params = {"state": "closed", "per_page": 100}
+            pulls_resp = self.session.get(pulls_url, params=pull_params, headers=headers)
             if pulls_resp.ok:
                 pulls = pulls_resp.json()
                 metadata["pull_requests"] = pulls
