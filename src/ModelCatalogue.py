@@ -56,6 +56,7 @@ from src.metrics.DatasetQualityMetric import DatasetQualityMetric
 from src.metrics.LicenseMetric import LicenseMetric
 from src.metrics.PerformanceClaimsMetric import PerformanceClaimsMetric
 from src.metrics.RampUpMetric import RampUpMetric
+from src.metrics.ReviewednessMetric import ReviewednessMetric
 from src.metrics.SizeMetric import SizeMetric
 from src.Model import Model
 
@@ -76,6 +77,7 @@ class ModelCatalogue:
             CodeQualityMetric(),
             DatasetQualityMetric(),
             RampUpMetric(),
+            ReviewednessMetric(),
         ]
 
     def addModel(self, model: Model) -> None:
@@ -125,6 +127,8 @@ class ModelCatalogue:
             "dataset_quality_latency": model.getLatency("DatasetQualityMetric"),
             "code_quality": model.getScore("CodeQualityMetric"),
             "code_quality_latency": model.getLatency("CodeQualityMetric"),
+            "reviewedness": model.getScore("ReviewednessMetric"),
+            "reviewedness_latency": model.getLatency("ReviewednessMetric"),
         }
 
         # Convert model evaluation to a single NDJSON line

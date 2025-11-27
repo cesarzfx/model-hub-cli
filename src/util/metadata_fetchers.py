@@ -223,6 +223,23 @@ class GitHubFetcher(MetadataFetcher):
                     f"Failed to fetch commits (HTTP {resp.status_code}) for {url}"
                 )
 
+            # Fetch pull requests for reviewedness metric
+            pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
+            logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
+            params = {"state": "closed", "per_page": 100}
+            pulls_resp = self.session.get(
+                pulls_url, params=params, headers=headers
+            )
+            if pulls_resp.ok:
+                pulls = pulls_resp.json()
+                metadata["pull_requests"] = pulls
+                metadata["pull_requests_count"] = len(pulls)
+            else:
+                logger.warning(
+                    f"Failed to fetch pull requests "
+                    f"(HTTP {pulls_resp.status_code}) for {url}"
+                )
+
         except Exception as e:
             logger.exception(f"Exception fetching GitHub metadata: {e}")
 
