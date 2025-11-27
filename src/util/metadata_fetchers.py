@@ -227,9 +227,7 @@ class GitHubFetcher(MetadataFetcher):
             pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
             logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
             params = {"state": "closed", "per_page": 100}
-            pulls_resp = self.session.get(
-                pulls_url, params=params, headers=headers
-            )
+            pulls_resp = self.session.get(pulls_url, params=params, headers=headers)
             if pulls_resp.ok:
                 pulls = pulls_resp.json()
                 metadata["pull_requests"] = pulls

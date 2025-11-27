@@ -82,15 +82,11 @@ class ReviewednessMetric(Metric):
             return -1.0
 
         reviewedness_score = self._calculate_reviewedness(pull_requests)
-        logger.debug(
-            "ReviewednessMetric: Calculated score {:.3f}", reviewedness_score
-        )
+        logger.debug("ReviewednessMetric: Calculated score {:.3f}", reviewedness_score)
 
         return reviewedness_score
 
-    def _calculate_reviewedness(
-        self, pull_requests: List[Dict[str, Any]]
-    ) -> float:
+    def _calculate_reviewedness(self, pull_requests: List[Dict[str, Any]]) -> float:
         """
         Calculate the fraction of merged PRs that were reviewed.
 
@@ -103,9 +99,7 @@ class ReviewednessMetric(Metric):
         if not pull_requests:
             return -1.0
 
-        merged_prs = [
-            pr for pr in pull_requests if pr.get("merged_at") is not None
-        ]
+        merged_prs = [pr for pr in pull_requests if pr.get("merged_at") is not None]
 
         if not merged_prs:
             logger.debug("No merged pull requests found")
