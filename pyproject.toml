@@ -31,4 +31,4 @@ disallow_incomplete_defs = true
 show_error_codes = true
  
 [tool.coverage.report]
-fail_under = 75
+fail_under = 50

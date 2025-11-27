@@ -199,6 +199,21 @@ class GitHubFetcher(MetadataFetcher):
                     f"Failed to fetch license (HTTP {resp.status_code}) for {url}"
                 )
 
+            # Fetch repository info
+            repo_url = f"{self.BASE_API_URL}/{owner}/{repo}"
+            logger.debug(f"Fetching GitHub repository info from: {repo_url}")
+            resp = self.session.get(repo_url, headers=headers, timeout=5)
+            if resp.ok:
+                repo_data = resp.json()
+                metadata["clone_url"] = repo_data.get("clone_url")
+                metadata["stargazers_count"] = repo_data.get("stargazers_count", 0)
+                metadata["forks_count"] = repo_data.get("forks_count", 0)
+            else:
+                logger.warning(
+                    f"Failed to fetch repository info (HTTP {resp.status_code}) "
+                    f"for {url}"
+                )
+
             # Fetch recent commit activity
             commits_url = f"{self.BASE_API_URL}/{owner}/{repo}/commits"
             logger.debug(f"Fetching GitHub commits from: {commits_url}")
@@ -218,23 +233,6 @@ class GitHubFetcher(MetadataFetcher):
             pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
             logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
             pull_params: GitHubParams = {"state": "closed", "per_page": 100}
-            pulls_resp = self.session.get(
-                pulls_url, params=pull_params, headers=headers
-            )
-            if pulls_resp.ok:
-                pulls = pulls_resp.json()
-                metadata["pull_requests"] = pulls
-                metadata["pull_requests_count"] = len(pulls)
-            else:
-                logger.warning(
-                    f"Failed to fetch pull requests "
-                    f"(HTTP {pulls_resp.status_code}) for {url}"
-                )
-
-            # Fetch pull requests for reviewedness metric
-            pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
-            logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
-            pull_params = {"state": "closed", "per_page": "100"}
             pulls_resp = self.session.get(
                 pulls_url, params=pull_params, headers=headers
             )

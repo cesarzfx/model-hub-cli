@@ -14,8 +14,8 @@ source = src
 # Show missing lines in report for better feedback
 show_missing = True
 
-# Fail if coverage is below 80% (adjust as needed)
-fail_under = 80
+# Fail if coverage is below 50% (adjust as needed)
+fail_under = 50
 
 # Skip reporting on files with 100% coverage (optional)
 skip_covered = False

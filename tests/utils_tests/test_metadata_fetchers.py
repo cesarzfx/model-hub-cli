@@ -112,8 +112,10 @@ def test_github_fetcher_success():
         "stargazers_count": 100,
         "forks_count": 50,
         "commits_count": 150,
+        "pull_requests": [],
+        "pull_requests_count": 0,
     }
-    assert session.get.call_count == 4
+    assert session.get.call_count == 5
 
 
 def test_github_fetcher_invalid_url_not_github():
@@ -158,11 +160,15 @@ def test_github_fetcher_partial_failure():
     commit_response = MagicMock(ok=True)
     commit_response.json.return_value = [{}] * 150  # 150 commits
 
+    pulls_response = MagicMock(ok=True)
+    pulls_response.json.return_value = []
+
     session.get.side_effect = [
         contrib_response,
         license_response,
         repo_response,
         commit_response,
+        pulls_response,
     ]
 
     fetcher = GitHubFetcher(session=session)
@@ -174,8 +180,10 @@ def test_github_fetcher_partial_failure():
         "stargazers_count": 100,
         "forks_count": 50,
         "commits_count": 150,
+        "pull_requests": [],
+        "pull_requests_count": 0,
     }
-    assert session.get.call_count == 4
+    assert session.get.call_count == 5
 
 
 def test_github_fetcher_no_url():
