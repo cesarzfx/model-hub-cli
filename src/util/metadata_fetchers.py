@@ -50,6 +50,10 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import requests
+from typing import Union
+
+# Type alias for GitHub API params
+GitHubParams = dict[str, Union[str, int]]
 from huggingface_hub import hf_hub_download
 from loguru import logger
 
