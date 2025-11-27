@@ -89,11 +89,16 @@ def test_github_fetcher_success():
     commit_response = MagicMock(ok=True)
     commit_response.json.return_value = [{}] * 150  # 150 commits
 
+    # Mock pull requests response
+    pulls_response = MagicMock(ok=True)
+    pulls_response.json.return_value = []
+
     session.get.side_effect = [
         contrib_response,
         license_response,
         repo_response,
         commit_response,
+        pulls_response,
     ]
 
     fetcher = GitHubFetcher(session=session)
