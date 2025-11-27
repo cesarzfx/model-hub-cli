@@ -228,7 +228,7 @@ class GitHubFetcher(MetadataFetcher):
             # Fetch pull requests for reviewedness metric
             pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
             logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
-            pull_params = {"state": "closed", "per_page": 100}
+                pull_params = {"state": "closed", "per_page": "100"}
             pulls_resp = self.session.get(
                 pulls_url, params=pull_params, headers=headers
             )
