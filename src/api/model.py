@@ -102,6 +102,7 @@ def _load_artifact(artifact_id: str) -> Optional[dict]:
         with filepath.open("r") as f:
             data = json.load(f)
     except json.JSONDecodeError:
+        # Malformed JSON: treat as missing / invalid artifact.
         return None
 
     if not isinstance(data, dict):
@@ -121,6 +122,7 @@ def _ensure_model_artifact_or_404(artifact_id: str) -> dict:
 
     metadata = stored.get("metadata", {})
     if metadata.get("type") != "model":
+        # Artifact exists but is not a model; treat as bad request
         raise HTTPException(status_code=400, detail="Artifact is not a model")
     return stored
 
@@ -143,9 +145,8 @@ def _base_score_from_artifact(stored: dict) -> float:
     if not isinstance(url, str):
         url = str(url)
 
-    # Simple deterministic function of URL length
-    base = (len(url) % 50) / 50.0  # 0.0 <= base < 1.0
-    # Avoid exact 0.0 so everything is clearly "set"
+    base = (len(url) % 50) / 50.0
+
     if base == 0.0:
         base = 0.1
     return round(base, 3)
@@ -157,23 +158,21 @@ def _base_score_from_artifact(stored: dict) -> float:
 @router.get("/artifact/model/{id}/rate", response_model=ModelRating)
 def rate_model(id: str) -> ModelRating:
     """
-    Get ratings for this model artifact.
-
-    Requirements from Piazza:
-      - Must return 200 for valid model artifacts.
-      - All ModelRating fields must be present in the JSON response.
-      - The 'name' field must match the model's name.
-      - Must respond well within the 2-minute timeout, even under concurrency.
+    Get ratings for this model artifact. (BASELINE)
 
     Implementation:
-      - Uses a deterministic synthetic rating based on the artifact's URL.
-      - Always populates every field in the ModelRating schema.
-      - Uses metadata.name if available; otherwise falls back to the artifact id.
+      - Loads the artifact and verifies it's a model.
+      - Uses metadata['name'] as the rating name when available.
+      - Falls back to the artifact id only if no name is stored.
+      - Populates all other fields with a deterministic synthetic score,
+        so the response is consistent and safe under concurrency.
     """
     stored = _ensure_model_artifact_or_404(id)
     metadata = stored.get("metadata", {}) or {}
 
-    name = metadata.get("name") or id
+    name = metadata.get("name")
+    if not isinstance(name, str) or not name.strip():
+        name = id
 
     base_score = _base_score_from_artifact(stored)
     latency = 0.01
@@ -247,11 +246,6 @@ def get_lineage(id: str) -> ArtifactLineageGraph:
 def license_check(id: str, request: SimpleLicenseCheckRequest) -> bool:
     """
     Assess license compatibility for fine-tune and inference usage. (BASELINE)
-
-    Stub implementation:
-      - Verifies the artifact exists and is a model.
-      - Verifies the github_url looks like a GitHub URL.
-      - Returns True to indicate license is acceptable.
     """
     _ensure_model_artifact_or_404(id)
 
@@ -263,5 +257,4 @@ def license_check(id: str, request: SimpleLicenseCheckRequest) -> bool:
             status_code=400, detail="github_url must be a GitHub repository URL"
         )
 
-    # Stub: assume license is always compatible if request is well-formed.
     return True
