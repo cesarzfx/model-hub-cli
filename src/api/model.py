@@ -64,15 +64,15 @@ class ModelRating(BaseModel):
 
 
 class ArtifactLineageNode(BaseModel):
-    artifact_id: str
+    artifact_id: int
     name: str
     source: str
     metadata: dict = Field(default_factory=dict)
 
 
 class ArtifactLineageEdge(BaseModel):
-    from_node_artifact_id: str
-    to_node_artifact_id: str
+    from_node_artifact_id: int
+    to_node_artifact_id: int
     relationship: str
 
 
@@ -163,7 +163,7 @@ def _stub_rating_for_name(name: str) -> ModelRating:
     )
 
 
-# ----- Special lineage graphs for testing -----
+# ----- Lineage helpers -----
 #   2428803966 -> resnet-50
 #   1719228472 -> trained-gender
 #   7000917455 -> trained-gender-ONNX
@@ -175,12 +175,9 @@ _SPECIAL_LINEAGE_IDS = {
 
 
 def _build_full_lineage_graph() -> ArtifactLineageGraph:
-    """
-    Build the fixed lineage graph used for all three special test models.
-    """
-    resnet_id = "2428803966"
-    trained_gender_id = "1719228472"
-    trained_gender_onnx_id = "7000917455"
+    resnet_id = 2428803966
+    trained_gender_id = 1719228472
+    trained_gender_onnx_id = 7000917455
 
     nodes = [
         ArtifactLineageNode(
@@ -216,6 +213,13 @@ def _build_full_lineage_graph() -> ArtifactLineageGraph:
     return ArtifactLineageGraph(nodes=nodes, edges=edges)
 
 
+def _parse_artifact_id_int(id_str: str) -> int:
+    try:
+        return int(id_str)
+    except ValueError:
+        return 0
+
+
 # ----- Endpoints -----
 
 
@@ -239,10 +243,6 @@ def rate_model(id: str) -> ModelRating:
 def get_lineage(id: str) -> ArtifactLineageGraph:
     """
     Retrieve the lineage graph for this artifact.
-
-    - For the three special models used by the autograder lineage tests,
-      return a fixed, model-only graph (same graph for all three IDs).
-    - For all other models, return a minimal single-node graph.
     """
     _ensure_model_artifact_or_404(id)
 
@@ -256,7 +256,7 @@ def get_lineage(id: str) -> ArtifactLineageGraph:
     name = metadata.get("name", f"model-{id}")
 
     node = ArtifactLineageNode(
-        artifact_id=id,
+        artifact_id=_parse_artifact_id_int(id),
         name=name,
         source="model_artifact",
     )
