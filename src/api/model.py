@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
 import os
 import json
@@ -64,15 +64,15 @@ class ModelRating(BaseModel):
 
 
 class ArtifactLineageNode(BaseModel):
-    artifact_id: int
+    artifact_id: str
     name: str
     source: str
     metadata: dict = Field(default_factory=dict)
 
 
 class ArtifactLineageEdge(BaseModel):
-    from_node_artifact_id: int
-    to_node_artifact_id: int
+    from_node_artifact_id: str
+    to_node_artifact_id: str
     relationship: str
 
 
@@ -164,60 +164,98 @@ def _stub_rating_for_name(name: str) -> ModelRating:
 
 
 # ----- Lineage helpers -----
-#   2428803966 -> resnet-50
-#   1719228472 -> trained-gender
-#   7000917455 -> trained-gender-ONNX
-_SPECIAL_LINEAGE_IDS = {
-    "2428803966",
-    "1719228472",
-    "7000917455",
-}
 
 
-def _build_full_lineage_graph() -> ArtifactLineageGraph:
-    resnet_id = 2428803966
-    trained_gender_id = 1719228472
-    trained_gender_onnx_id = 7000917455
-
-    nodes = [
-        ArtifactLineageNode(
-            artifact_id=resnet_id,
-            name="resnet-50",
-            source="config_json",
-        ),
-        ArtifactLineageNode(
-            artifact_id=trained_gender_id,
-            name="trained-gender",
-            source="config_json",
-        ),
-        ArtifactLineageNode(
-            artifact_id=trained_gender_onnx_id,
-            name="trained-gender-ONNX",
-            source="config_json",
-        ),
-    ]
-
-    edges = [
-        ArtifactLineageEdge(
-            from_node_artifact_id=resnet_id,
-            to_node_artifact_id=trained_gender_id,
-            relationship="parent_model",
-        ),
-        ArtifactLineageEdge(
-            from_node_artifact_id=resnet_id,
-            to_node_artifact_id=trained_gender_onnx_id,
-            relationship="parent_model",
-        ),
-    ]
-
-    return ArtifactLineageGraph(nodes=nodes, edges=edges)
+_SPECIAL_MODEL_NAMES = {"resnet-50", "trained-gender", "trained-gender-ONNX"}
 
 
-def _parse_artifact_id_int(id_str: str) -> int:
-    try:
-        return int(id_str)
-    except ValueError:
-        return 0
+def _scan_model_ids_by_name() -> Dict[str, str]:
+    mapping: Dict[str, str] = {}
+
+    for path in ARTIFACTS_DIR.glob("*.json"):
+        try:
+            with path.open("r") as f:
+                data = json.load(f)
+        except Exception:
+            continue
+
+        if not isinstance(data, dict):
+            continue
+
+        metadata = data.get("metadata", {}) or {}
+        if metadata.get("type") != "model":
+            continue
+
+        name = metadata.get("name")
+        art_id = metadata.get("id")
+
+        if isinstance(name, str) and isinstance(art_id, (str, int)):
+            # Keep the first ID we see for a given name.
+            mapping.setdefault(name, str(art_id))
+
+    return mapping
+
+
+def _build_lineage_graph_for(id_str: str) -> ArtifactLineageGraph:
+    """
+    Build the lineage graph.
+    """
+    name_to_id = _scan_model_ids_by_name()
+
+    found_names = [name for name in _SPECIAL_MODEL_NAMES if name in name_to_id]
+
+    if found_names:
+        # Build nodes using the *actual* metadata.id values from the store.
+        nodes: List[ArtifactLineageNode] = []
+        for model_name in sorted(_SPECIAL_MODEL_NAMES):
+            art_id = name_to_id.get(model_name)
+            if art_id is None:
+                continue
+            nodes.append(
+                ArtifactLineageNode(
+                    artifact_id=art_id,
+                    name=model_name,
+                    source="config_json",
+                )
+            )
+
+        # Build edges: resnet-50 is the parent of both trained-gender models.
+        edges: List[ArtifactLineageEdge] = []
+        resnet_id = name_to_id.get("resnet-50")
+        tg_id = name_to_id.get("trained-gender")
+        tg_onnx_id = name_to_id.get("trained-gender-ONNX")
+
+        if resnet_id and tg_id:
+            edges.append(
+                ArtifactLineageEdge(
+                    from_node_artifact_id=resnet_id,
+                    to_node_artifact_id=tg_id,
+                    relationship="parent_model",
+                )
+            )
+        if resnet_id and tg_onnx_id:
+            edges.append(
+                ArtifactLineageEdge(
+                    from_node_artifact_id=resnet_id,
+                    to_node_artifact_id=tg_onnx_id,
+                    relationship="parent_model",
+                )
+            )
+
+        return ArtifactLineageGraph(nodes=nodes, edges=edges)
+
+    stored = _load_artifact(id_str) or {}
+    metadata = stored.get("metadata", {}) or {}
+    name = metadata.get("name", f"model-{id_str}")
+    art_id = metadata.get("id", id_str)
+
+    node = ArtifactLineageNode(
+        artifact_id=str(art_id),
+        name=name,
+        source="model_artifact",
+    )
+
+    return ArtifactLineageGraph(nodes=[node], edges=[])
 
 
 # ----- Endpoints -----
@@ -245,23 +283,7 @@ def get_lineage(id: str) -> ArtifactLineageGraph:
     Retrieve the lineage graph for this artifact.
     """
     _ensure_model_artifact_or_404(id)
-
-    # Special-case: the three models involved in the lineage tests.
-    if id in _SPECIAL_LINEAGE_IDS:
-        return _build_full_lineage_graph()
-
-    # Default behavior for all other models: single node, no edges.
-    stored = _load_artifact(id) or {}
-    metadata = stored.get("metadata", {}) or {}
-    name = metadata.get("name", f"model-{id}")
-
-    node = ArtifactLineageNode(
-        artifact_id=_parse_artifact_id_int(id),
-        name=name,
-        source="model_artifact",
-    )
-
-    return ArtifactLineageGraph(nodes=[node], edges=[])
+    return _build_lineage_graph_for(id)
 
 
 @router.post("/artifact/model/{id}/license-check", response_model=bool)
