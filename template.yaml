@@ -48,20 +48,6 @@ Resources:
         AllowOrigins:
           - '*'
 
-  #GET model rate endpoint
-  GetModelRateFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: lambdas/model_rate.lambda_handler
-      Runtime: python3.9
-      Events:
-        ApiEvent:
-          Type: HttpApi
-          Properties:
-            Path: /artifact/model/{id}/rate
-            Method: GET
-
 Outputs:
   ApiEndpoint:
     Description: API Gateway endpoint URL
