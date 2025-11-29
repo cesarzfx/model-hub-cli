@@ -131,7 +131,7 @@ def _ensure_model_artifact_or_404(artifact_id: str) -> dict:
 def _stub_rating_for_name(name: str) -> ModelRating:
     return ModelRating(
         name=name,
-        category="model",
+        category="nlp",
         net_score=0.8,
         net_score_latency=1.5,
         ramp_up_time=0.7,
