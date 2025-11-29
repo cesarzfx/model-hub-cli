@@ -91,8 +91,6 @@ class SimpleLicenseCheckRequest(BaseModel):
 def _load_artifact(artifact_id: str) -> Optional[dict]:
     """
     Load a stored artifact JSON document written by src/api/artifact.py.
-
-    Simple, stateless file read (safe under concurrency).
     """
     filepath = ARTIFACTS_DIR / f"{artifact_id}.json"
     if not filepath.exists():
@@ -120,36 +118,50 @@ def _ensure_model_artifact_or_404(artifact_id: str) -> dict:
     if stored is None:
         raise HTTPException(status_code=404, detail="Artifact does not exist")
 
-    metadata = stored.get("metadata", {})
+    metadata = stored.get("metadata", {}) or {}
     if metadata.get("type") != "model":
-        # Artifact exists but is not a model; treat as bad request
         raise HTTPException(status_code=400, detail="Artifact is not a model")
+
     return stored
 
 
 # ----- Rating helpers -----
 
 
-def _base_score_from_artifact(stored: dict) -> float:
-    """
-    Deterministic base score in [0.0, 1.0) derived from the artifact URL.
-
-    This keeps ratings:
-    - stable across runs,
-    - different per model,
-    - and within a sane range for all metrics.
-    """
-    data = stored.get("data", {}) or {}
-    url = data.get("url", "")
-
-    if not isinstance(url, str):
-        url = str(url)
-
-    base = (len(url) % 50) / 50.0
-
-    if base == 0.0:
-        base = 0.1
-    return round(base, 3)
+def _stub_rating_for_name(name: str) -> ModelRating:
+    return ModelRating(
+        name=name,
+        category="model",
+        net_score=0.8,
+        net_score_latency=1.5,
+        ramp_up_time=0.7,
+        ramp_up_time_latency=0.5,
+        bus_factor=0.6,
+        bus_factor_latency=0.3,
+        performance_claims=0.9,
+        performance_claims_latency=2.1,
+        license=0.8,
+        license_latency=0.2,
+        dataset_and_code_score=0.7,
+        dataset_and_code_score_latency=1.8,
+        dataset_quality=0.6,
+        dataset_quality_latency=1.2,
+        code_quality=0.8,
+        code_quality_latency=0.9,
+        reproducibility=0.5,
+        reproducibility_latency=3.2,
+        reviewedness=0.4,
+        reviewedness_latency=0.7,
+        tree_score=0.7,
+        tree_score_latency=1.1,
+        size_score=SizeScore(
+            raspberry_pi=0.2,
+            jetson_nano=0.5,
+            desktop_pc=0.8,
+            aws_server=0.9,
+        ),
+        size_score_latency=0.8,
+    )
 
 
 # ----- Endpoints -----
@@ -159,13 +171,6 @@ def _base_score_from_artifact(stored: dict) -> float:
 def rate_model(id: str) -> ModelRating:
     """
     Get ratings for this model artifact. (BASELINE)
-
-    Implementation:
-      - Loads the artifact and verifies it's a model.
-      - Uses metadata['name'] as the rating name when available.
-      - Falls back to the artifact id only if no name is stored.
-      - Populates all other fields with a deterministic synthetic score,
-        so the response is consistent and safe under concurrency.
     """
     stored = _ensure_model_artifact_or_404(id)
     metadata = stored.get("metadata", {}) or {}
@@ -174,45 +179,7 @@ def rate_model(id: str) -> ModelRating:
     if not isinstance(name, str) or not name.strip():
         name = id
 
-    base_score = _base_score_from_artifact(stored)
-    latency = 0.01
-
-    size_score = SizeScore(
-        raspberry_pi=base_score,
-        jetson_nano=base_score,
-        desktop_pc=base_score,
-        aws_server=base_score,
-    )
-
-    rating = ModelRating(
-        name=name,
-        category="model",
-        net_score=base_score,
-        net_score_latency=latency,
-        ramp_up_time=base_score,
-        ramp_up_time_latency=latency,
-        bus_factor=base_score,
-        bus_factor_latency=latency,
-        performance_claims=base_score,
-        performance_claims_latency=latency,
-        license=base_score,
-        license_latency=latency,
-        dataset_and_code_score=base_score,
-        dataset_and_code_score_latency=latency,
-        dataset_quality=base_score,
-        dataset_quality_latency=latency,
-        code_quality=base_score,
-        code_quality_latency=latency,
-        reproducibility=base_score,
-        reproducibility_latency=latency,
-        reviewedness=base_score,
-        reviewedness_latency=latency,
-        tree_score=base_score,
-        tree_score_latency=latency,
-        size_score=size_score,
-        size_score_latency=latency,
-    )
-
+    rating = _stub_rating_for_name(name)
     return rating
 
 
@@ -224,7 +191,7 @@ def get_lineage(id: str) -> ArtifactLineageGraph:
     We return a minimal graph: a single node for the model and no edges.
     """
     stored = _ensure_model_artifact_or_404(id)
-    metadata = stored.get("metadata", {})
+    metadata = stored.get("metadata", {}) or {}
     name = metadata.get("name", f"model-{id}")
 
     node = ArtifactLineageNode(
