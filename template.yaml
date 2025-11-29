@@ -22,8 +22,11 @@ Resources:
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
+          ARTIFACTS_TABLE_NAME: model-hub-artifacts
       Policies:
         - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: model-hub-artifacts
       Events:
         ApiEvent:
           Type: HttpApi
