@@ -2,8 +2,11 @@ from fastapi import APIRouter, HTTPException, Header
 from typing import Dict, List
 import os
 import glob
+import logging
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 # Import issued_tokens from auth.py
 try:
@@ -17,44 +20,48 @@ ARTIFACTS_DIR = "/tmp/artifacts"
 
 def clear_dynamo_table() -> None:
     """
-    Clear all items from the DynamoDB artifacts table, if configured.
+    Best-effort: clear all items from the DynamoDB artifacts table, if configured.
 
-    - Uses ARTIFACTS_TABLE_NAME env var (e.g., 'model-hub-artifacts').
-    - Safe to call even if the table or boto3 isn't available (no crash).
+    - Uses ARTIFACTS_TABLE_NAME env var.
+    - Swallows all errors so /reset never returns 500 because of DynamoDB.
     """
     table_name = os.getenv("ARTIFACTS_TABLE_NAME")
     if not table_name:
+        logger.info("No ARTIFACTS_TABLE_NAME set; skipping DynamoDB reset.")
         return
 
     try:
         import boto3  # type: ignore
     except ImportError:
+        logger.warning("boto3 not available; skipping DynamoDB reset.")
         return
 
-    dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(table_name)
+    try:
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(table_name)
 
-    scan_kwargs = {"ProjectionExpression": "artifact_id"}
+        scan_kwargs = {"ProjectionExpression": "artifact_id"}
 
-    while True:
-        response = table.scan(**scan_kwargs)
-        items = response.get("Items", [])
-        if not items:
-            break
+        while True:
+            response = table.scan(**scan_kwargs)
+            items = response.get("Items", [])
+            if not items:
+                break
 
-        # Batch delete for efficiency
-        with table.batch_writer() as batch:
-            for item in items:
-                artifact_id = item.get("artifact_id")
-                if artifact_id is not None:
-                    batch.delete_item(Key={"artifact_id": artifact_id})
+            with table.batch_writer() as batch:
+                for item in items:
+                    artifact_id = item.get("artifact_id")
+                    if artifact_id is not None:
+                        batch.delete_item(Key={"artifact_id": artifact_id})
 
-        # Handle pagination if there are more items
-        last_key = response.get("LastEvaluatedKey")
-        if not last_key:
-            break
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                break
 
-        scan_kwargs["ExclusiveStartKey"] = last_key
+        logger.info("Successfully cleared DynamoDB table %s", table_name)
+    except Exception as e:
+        logger.error("Error clearing DynamoDB table %s: %s", table_name, e)
+        return
 
 
 def clear_artifacts() -> None:
