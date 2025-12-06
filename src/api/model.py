@@ -156,8 +156,8 @@ def _stub_rating_for_name(name: str) -> ModelRating:
         tree_score=0.7,
         tree_score_latency=1.1,
         size_score=SizeScore(
-            raspberry_pi=0.2,
-            jetson_nano=0.5,
+            raspberry_pi=0.5,
+            jetson_nano=0.6,
             desktop_pc=0.8,
             aws_server=0.9,
         ),
