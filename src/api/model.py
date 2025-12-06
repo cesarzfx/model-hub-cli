@@ -139,7 +139,7 @@ def _stub_rating_for_name(name: str) -> ModelRating:
         ramp_up_time_latency=0.5,
         bus_factor=0.6,
         bus_factor_latency=0.3,
-        performance_claims=0.85,
+        performance_claims=0.80,
         performance_claims_latency=2.1,
         license=0.8,
         license_latency=0.2,
