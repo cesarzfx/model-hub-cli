@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict
 from pathlib import Path
 import os
 import shutil
 import logging
+
+from .auth import require_token, User
 
 router = APIRouter()
 
@@ -36,10 +38,19 @@ def clear_artifacts() -> None:
 
 
 @router.delete("/reset")
-def reset_registry() -> Dict[str, str]:
+def reset_registry(user: User = Depends(require_token)) -> Dict[str, str]:
     """
     Reset registry state for the autograder.
+    Requires authentication via X-Authorization header.
+    Only admin users can reset the registry.
     """
+    # Require admin privileges
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin privileges required to reset registry"
+        )
+    
     clear_artifacts()
 
     return {"message": "Registry reset successfully"}
