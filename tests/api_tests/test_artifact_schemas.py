@@ -22,12 +22,8 @@ class TestArtifactMetadata:
 
     def test_artifact_metadata_valid(self):
         """Test creating valid ArtifactMetadata."""
-        metadata = ArtifactMetadata(
-            id="test123",
-            name="test-artifact",
-            type="model"
-        )
-        
+        metadata = ArtifactMetadata(id="test123", name="test-artifact", type="model")
+
         assert metadata.id == "test123"
         assert metadata.name == "test-artifact"
         assert metadata.type == "model"
@@ -69,23 +65,23 @@ class TestArtifact:
         """Test creating valid Artifact."""
         metadata = ArtifactMetadata(id="123", name="test", type="model")
         data = ArtifactData(url="https://example.com/model.bin")
-        
+
         artifact = Artifact(metadata=metadata, data=data)
-        
+
         assert artifact.metadata.id == "123"
         assert artifact.data.url == "https://example.com/model.bin"
 
     def test_artifact_requires_metadata(self):
         """Test that metadata is required."""
         data = ArtifactData(url="https://example.com/model.bin")
-        
+
         with pytest.raises(ValidationError):
             Artifact(data=data)
 
     def test_artifact_requires_data(self):
         """Test that data is required."""
         metadata = ArtifactMetadata(id="123", name="test", type="model")
-        
+
         with pytest.raises(ValidationError):
             Artifact(metadata=metadata)
 
@@ -96,7 +92,7 @@ class TestArtifactQuery:
     def test_artifact_query_valid(self):
         """Test creating valid ArtifactQuery."""
         query = ArtifactQuery(name="test-model", types=["model"])
-        
+
         assert query.name == "test-model"
         assert query.types == ["model"]
 
@@ -166,4 +162,4 @@ class TestConstants:
     def test_artifact_id_pattern_exists(self):
         """Test that ARTIFACT_ID_PATTERN is defined."""
         assert ARTIFACT_ID_PATTERN is not None
-        assert hasattr(ARTIFACT_ID_PATTERN, 'pattern')  # It's a compiled regex
+        assert hasattr(ARTIFACT_ID_PATTERN, "pattern")  # It's a compiled regex

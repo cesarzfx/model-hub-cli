@@ -28,7 +28,7 @@ class TestPasswordHashing:
         """Test that password hashing returns a hex string."""
         password = "testpassword123"
         hashed = _hash_password(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) == 64  # SHA256 produces 32 bytes = 64 hex chars
         # Verify it's valid hex
@@ -39,40 +39,42 @@ class TestPasswordHashing:
         password = "testpassword123"
         hash1 = _hash_password(password)
         hash2 = _hash_password(password)
-        
+
         assert hash1 == hash2
 
     def test_hash_password_different_passwords_different_hashes(self):
         """Test that different passwords produce different hashes."""
         hash1 = _hash_password("password1")
         hash2 = _hash_password("password2")
-        
+
         assert hash1 != hash2
 
     def test_verify_password_correct_password(self):
         """Test password verification with correct password."""
         password = "correctpassword"
         hashed = _hash_password(password)
-        
+
         assert _verify_password(hashed, password) is True
 
     def test_verify_password_incorrect_password(self):
         """Test password verification with incorrect password."""
         password = "correctpassword"
         hashed = _hash_password(password)
-        
+
         assert _verify_password(hashed, "wrongpassword") is False
 
     def test_verify_password_default_admin(self):
         """Test that default admin password hash verifies correctly."""
-        correct_password = "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
-        
+        correct_password = (
+            "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
+        )
+
         assert _verify_password(_DEFAULT_ADMIN_PASSWORD_HASH, correct_password) is True
 
     def test_verify_password_default_admin_wrong(self):
         """Test that wrong password fails for default admin."""
         wrong_password = "wrongpassword"
-        
+
         assert _verify_password(_DEFAULT_ADMIN_PASSWORD_HASH, wrong_password) is False
 
 
@@ -111,54 +113,54 @@ class TestTokenValidation:
         """Test that a valid token is recognized."""
         token = "bearer testtoken123"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 9999999999.0,  # Far future
             "remaining_uses": 100,
         }
-        
+
         assert is_token_valid(token) is True
 
     def test_is_token_valid_expired_token(self):
         """Test that expired token is invalid."""
         token = "bearer expiredtoken"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 0.0,  # Past
             "remaining_uses": 100,
         }
-        
+
         assert is_token_valid(token) is False
 
     def test_is_token_valid_exhausted_token(self):
         """Test that exhausted token is invalid."""
         token = "bearer exhaustedtoken"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 9999999999.0,
             "remaining_uses": 0,
         }
-        
+
         assert is_token_valid(token) is False
 
     def test_consume_token_valid(self):
         """Test consuming a valid token."""
         token = "bearer validtoken"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 9999999999.0,
             "remaining_uses": 100,
         }
-        
+
         returned_user = consume_token(token)
-        
+
         assert returned_user.name == user.name
         assert returned_user.is_admin == user.is_admin
         assert issued_tokens[token]["remaining_uses"] == 99
@@ -167,7 +169,7 @@ class TestTokenValidation:
         """Test that consuming invalid token raises 401."""
         with pytest.raises(HTTPException) as exc_info:
             consume_token("bearer invalidtoken")
-        
+
         assert exc_info.value.status_code == 401
         assert "Invalid or missing token" in exc_info.value.detail
 
@@ -175,16 +177,16 @@ class TestTokenValidation:
         """Test that consuming expired token raises 401."""
         token = "bearer expiredtoken"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 0.0,
             "remaining_uses": 100,
         }
-        
+
         with pytest.raises(HTTPException) as exc_info:
             consume_token(token)
-        
+
         assert exc_info.value.status_code == 401
         assert "expired" in exc_info.value.detail.lower()
         assert token not in issued_tokens  # Should be cleaned up
@@ -193,16 +195,16 @@ class TestTokenValidation:
         """Test that consuming exhausted token raises 401."""
         token = "bearer exhaustedtoken"
         user = User(name="testuser", is_admin=False)
-        
+
         issued_tokens[token] = {
             "user": user,
             "expires_at": 9999999999.0,
             "remaining_uses": 0,
         }
-        
+
         with pytest.raises(HTTPException) as exc_info:
             consume_token(token)
-        
+
         assert exc_info.value.status_code == 401
         assert "usage limit" in exc_info.value.detail.lower()
         assert token not in issued_tokens  # Should be cleaned up
@@ -227,7 +229,7 @@ class TestModels:
         user = User(name="testuser", is_admin=False)
         secret = UserAuthenticationInfo(password="secret123")
         auth_req = AuthenticationRequest(user=user, secret=secret)
-        
+
         assert auth_req.user.name == "testuser"
         assert auth_req.secret.password == "secret123"
 
@@ -241,10 +243,12 @@ class TestAuthenticateEndpoint:
             "/authenticate",
             json={
                 "user": {"name": "ece30861defaultadminuser", "is_admin": True},
-                "secret": {"password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"}
-            }
+                "secret": {
+                    "password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
+                },
+            },
         )
-        
+
         assert response.status_code == 200
         token = response.json()
         assert isinstance(token, str)
@@ -256,10 +260,10 @@ class TestAuthenticateEndpoint:
             "/authenticate",
             json={
                 "user": {"name": "ece30861defaultadminuser", "is_admin": True},
-                "secret": {"password": "wrongpassword"}
-            }
+                "secret": {"password": "wrongpassword"},
+            },
         )
-        
+
         assert response.status_code == 401
         assert "Invalid username or password" in response.json()["detail"]
 
@@ -269,10 +273,10 @@ class TestAuthenticateEndpoint:
             "/authenticate",
             json={
                 "user": {"name": "nonexistentuser", "is_admin": False},
-                "secret": {"password": "anypassword"}
-            }
+                "secret": {"password": "anypassword"},
+            },
         )
-        
+
         assert response.status_code == 401
 
     def test_authenticate_admin_without_admin_flag(self):
@@ -281,10 +285,12 @@ class TestAuthenticateEndpoint:
             "/authenticate",
             json={
                 "user": {"name": "ece30861defaultadminuser", "is_admin": False},
-                "secret": {"password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"}
-            }
+                "secret": {
+                    "password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
+                },
+            },
         )
-        
+
         assert response.status_code == 401
 
     def test_authenticate_returns_unique_tokens(self):
@@ -293,18 +299,21 @@ class TestAuthenticateEndpoint:
             "/authenticate",
             json={
                 "user": {"name": "ece30861defaultadminuser", "is_admin": True},
-                "secret": {"password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"}
-            }
+                "secret": {
+                    "password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
+                },
+            },
         )
         response2 = client.put(
             "/authenticate",
             json={
                 "user": {"name": "ece30861defaultadminuser", "is_admin": True},
-                "secret": {"password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"}
-            }
+                "secret": {
+                    "password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE artifacts;"
+                },
+            },
         )
-        
+
         assert response1.status_code == 200
         assert response2.status_code == 200
         assert response1.json() != response2.json()
-

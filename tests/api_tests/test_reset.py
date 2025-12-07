@@ -18,7 +18,7 @@ class TestClearArtifacts:
         """Test that clear_artifacts creates directory if it doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "nonexistent"
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 clear_artifacts()
                 assert test_dir.exists()
@@ -29,14 +29,14 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create test files
             (test_dir / "file1.json").write_text("test1")
             (test_dir / "file2.txt").write_text("test2")
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 clear_artifacts()
-                
+
                 # Directory should exist but be empty
                 assert test_dir.exists()
                 assert list(test_dir.iterdir()) == []
@@ -46,18 +46,18 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create subdirectories with files
             subdir1 = test_dir / "subdir1"
             subdir1.mkdir()
             (subdir1 / "file.txt").write_text("content")
-            
+
             subdir2 = test_dir / "subdir2"
             subdir2.mkdir()
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 clear_artifacts()
-                
+
                 assert test_dir.exists()
                 assert list(test_dir.iterdir()) == []
 
@@ -66,17 +66,17 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create a file and a symlink to it
             target_file = test_dir / "target.txt"
             target_file.write_text("content")
-            
+
             symlink = test_dir / "link.txt"
             symlink.symlink_to(target_file)
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 clear_artifacts()
-                
+
                 assert test_dir.exists()
                 assert list(test_dir.iterdir()) == []
 
@@ -85,14 +85,16 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create a file
             test_file = test_dir / "test.txt"
             test_file.write_text("content")
-            
+
             # Mock unlink to raise an exception
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
-                with patch.object(Path, "unlink", side_effect=PermissionError("Test error")):
+                with patch.object(
+                    Path, "unlink", side_effect=PermissionError("Test error")
+                ):
                     # Should not raise an exception
                     clear_artifacts()
 
@@ -101,11 +103,11 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create a subdirectory
             subdir = test_dir / "subdir"
             subdir.mkdir()
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 with patch("shutil.rmtree", side_effect=PermissionError("Test error")):
                     # Should not raise an exception
@@ -123,18 +125,18 @@ class TestClearArtifacts:
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir = Path(tmpdir) / "artifacts"
             test_dir.mkdir()
-            
+
             # Create mixed content
             (test_dir / "file1.txt").write_text("content1")
-            
+
             subdir = test_dir / "subdir"
             subdir.mkdir()
             (subdir / "nested.txt").write_text("nested")
-            
+
             (test_dir / "file2.json").write_text("{}")
-            
+
             with patch("src.api.reset.ARTIFACTS_DIR", test_dir):
                 clear_artifacts()
-                
+
                 assert test_dir.exists()
                 assert list(test_dir.iterdir()) == []
