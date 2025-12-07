@@ -59,6 +59,7 @@ from src.metrics.RampUpMetric import RampUpMetric
 from src.metrics.ReproducibilityMetric import ReproducibilityMetric
 from src.metrics.ReviewednessMetric import ReviewednessMetric
 from src.metrics.SizeMetric import SizeMetric
+from src.metrics.TreeScoreMetric import TreeScoreMetric
 from src.Model import Model
 
 
@@ -80,6 +81,7 @@ class ModelCatalogue:
             RampUpMetric(),
             ReviewednessMetric(),
             ReproducibilityMetric(),
+            TreeScoreMetric(),
         ]
 
     def addModel(self, model: Model) -> None:
@@ -133,6 +135,8 @@ class ModelCatalogue:
             "reviewedness_latency": model.getLatency("ReviewednessMetric"),
             "reproducibility": model.getScore("ReproducibilityMetric"),
             "reproducibility_latency": model.getLatency("ReproducibilityMetric"),
+            "tree_score": model.getScore("TreeScoreMetric"),
+            "tree_score_latency": model.getLatency("TreeScoreMetric"),
         }
 
         # Convert model evaluation to a single NDJSON line

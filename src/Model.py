@@ -172,13 +172,14 @@ class Model(ModelData):
         license_score = safe_score("LicenseMetric")
         weighted_sum = (
             0.15 * safe_score("SizeMetric")
-            + 0.25 * safe_score("RampUpMetric")
+            + 0.20 * safe_score("RampUpMetric")
             + 0.10 * safe_score("BusFactorMetric")
             + 0.10 * safe_score("AvailabilityMetric")
             + 0.10 * safe_score("DatasetQualityMetric")
             + 0.10 * safe_score("CodeQualityMetric")
             + 0.10 * safe_score("PerformanceClaimsMetric")
             + 0.10 * safe_score("ReproducibilityMetric")
+            + 0.05 * safe_score("TreeScoreMetric")
         )
         self.evaluations["NetScore"] = license_score * weighted_sum
         self.evaluationsLatency["NetScore"] = sum(
