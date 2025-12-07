@@ -138,13 +138,14 @@ def test_compute_net_score_all_metrics_present(sample_urls):
     expected_size_avg = 0.7  # (0.6 + 0.6 + 0.8 + 0.8) / 4
 
     expected_weighted = (
-        0.2 * expected_size_avg
-        + 0.3 * 0.7
-        + 0.1 * 0.8
-        + 0.1 * 0.9
-        + 0.1 * 0.6
-        + 0.1 * 0.7
-        + 0.1 * 0.5
+        0.15 * expected_size_avg
+        + 0.25 * 0.7
+        + 0.10 * 0.8
+        + 0.10 * 0.9
+        + 0.10 * 0.6
+        + 0.10 * 0.7
+        + 0.10 * 0.5
+        + 0.10 * 0.0  # ReproducibilityMetric missing, treated as 0
     )
 
     expected_score = round(1.0 * expected_weighted, 2)
@@ -194,13 +195,14 @@ def test_compute_net_score_handles_missing_metrics_as_zero(sample_urls):
     }
 
     expected_weighted = (
-        0.2 * 0.0  # SizeMetric treated as 0
-        + 0.3 * 0.5
-        + 0.1 * 0.0  # BusFactorMetric treated as 0
-        + 0.1 * 0.7
-        + 0.1 * 0.6
-        + 0.1 * 0.65
-        + 0.1 * 0.0  # PerformanceClaimsMetric treated as 0
+        0.15 * 0.0  # SizeMetric treated as 0
+        + 0.25 * 0.5
+        + 0.10 * 0.0  # BusFactorMetric treated as 0
+        + 0.10 * 0.7
+        + 0.10 * 0.6
+        + 0.10 * 0.65
+        + 0.10 * 0.0  # PerformanceClaimsMetric treated as 0
+        + 0.10 * 0.0  # ReproducibilityMetric treated as 0
     )
 
     expected_score = round(1.0 * expected_weighted, 2)
@@ -227,14 +229,15 @@ def test_compute_net_score_with_invalid_size_metric(sample_urls):
     # Size gets treated as 0.0
     expected_weighted = (
         0.0  # size
-        + 0.3 * 0.7
-        + 0.1 * 0.8
-        + 0.1 * 0.9
-        + 0.1 * 0.6
-        + 0.1 * 0.7
-        + 0.1 * 0.5
+        + 0.25 * 0.7
+        + 0.10 * 0.8
+        + 0.10 * 0.9
+        + 0.10 * 0.6
+        + 0.10 * 0.7
+        + 0.10 * 0.5
+        + 0.10 * 0.0  # ReproducibilityMetric missing, treated as 0
     )
     expected_score = round(1.0 * expected_weighted, 2)
     model.computeNetScore()
 
-    assert model.evaluations["NetScore"] == expected_score
+    assert round(model.evaluations["NetScore"], 2) == expected_score
