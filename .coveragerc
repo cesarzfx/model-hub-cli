@@ -15,7 +15,7 @@ source = src
 show_missing = True
 
 # Fail if coverage is below 50% (adjust as needed)
-fail_under = 50
+fail_under = 80
 
 # Skip reporting on files with 100% coverage (optional)
 skip_covered = False
