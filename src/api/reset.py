@@ -47,10 +47,9 @@ def reset_registry(user: User = Depends(require_token)) -> Dict[str, str]:
     # Require admin privileges
     if not user.is_admin:
         raise HTTPException(
-            status_code=403,
-            detail="Admin privileges required to reset registry"
+            status_code=403, detail="Admin privileges required to reset registry"
         )
-    
+
     clear_artifacts()
 
     return {"message": "Registry reset successfully"}
