@@ -3,27 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Phase 2 - Team 109</title>
+    <title>Model Hub - Team 109</title>
+    <meta name="description" content="Model Hub artifact management interface for uploading, querying, downloading, and rating models, datasets, and code artifacts">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>Project Phase 2 - Team 109</h1>
-        <p class="subtitle">Test Endpoint Dashboard</p>
-    </header>
-    <main>
-        <section class="endpoint-section">
-            <h2>Artifacts</h2>
-            <div class="input-group">
-                <input type="text" id="modelId" placeholder="Enter Model ID" value="">
-                <button id="testBtn">Test Endpoint</button>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header role="banner">
+        <div class="header-content">
+            <div class="logo-section">
+                <div>
+                    <h1>Phase 2</h1>
+                    <p class="team-badge">Team 109</p>
+                </div>
             </div>
-            <pre id="result">Click the button to test the endpoint...</pre>
+            <p class="subtitle">Your centralized platform for AI artifact management</p>
+        </div>
+    </header>
+
+    <nav role="navigation" aria-label="Main navigation">
+        <ul class="tab-list" role="tablist">
+            <li role="presentation">
+                <button role="tab" id="tab-upload" aria-selected="true" aria-controls="panel-upload" tabindex="0">
+                    <span class="tab-icon" aria-hidden="true">📤</span>
+                    <span class="tab-text">Upload</span>
+                </button>
+            </li>
+            <li role="presentation">
+                <button role="tab" id="tab-query" aria-selected="false" aria-controls="panel-query" tabindex="-1">
+                    <span class="tab-icon" aria-hidden="true">🔍</span>
+                    <span class="tab-text">Search</span>
+                </button>
+            </li>
+            <li role="presentation">
+                <button role="tab" id="tab-view" aria-selected="false" aria-controls="panel-view" tabindex="-1">
+                    <span class="tab-icon" aria-hidden="true">📥</span>
+                    <span class="tab-text">Download</span>
+                </button>
+            </li>
+            <li role="presentation">
+                <button role="tab" id="tab-rate" aria-selected="false" aria-controls="panel-rate" tabindex="-1">
+                    <span class="tab-icon" aria-hidden="true">⭐</span>
+                    <span class="tab-text">Rate</span>
+                </button>
+            </li>
+            <li role="presentation">
+                <button role="tab" id="tab-advanced" aria-selected="false" aria-controls="panel-advanced" tabindex="-1">
+                    <span class="tab-icon" aria-hidden="true">⚙️</span>
+                    <span class="tab-text">Advanced</span>
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <main id="main-content" role="main">
+        <!-- Upload Panel -->
+        <section id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" class="tab-panel active">
+            <div class="panel-header">
+                <h2><span class="section-icon" aria-hidden="true">📤</span> Upload Artifact</h2>
+                <p class="panel-description">Add models, datasets, or code to your artifact repository</p>
+            </div>
+            <form id="upload-form" aria-label="Upload artifact form" class="enhanced-form">
+                <div class="form-group">
+                    <label for="artifact-type">Artifact Type <span class="required" aria-label="required">*</span></label>
+                    <select id="artifact-type" name="artifact-type" required aria-required="true">
+                        <option value="">Select type...</option>
+                        <option value="model">Model</option>
+                        <option value="dataset">Dataset</option>
+                        <option value="code">Code</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="artifact-url">URL <span class="required" aria-label="required">*</span></label>
+                    <input type="url" id="artifact-url" name="artifact-url" 
+                           placeholder="https://github.com/owner/repo or https://huggingface.co/model" 
+                           required aria-required="true" aria-describedby="url-help">
+                    <small id="url-help" class="help-text">Enter GitHub or Hugging Face URL</small>
+                </div>
+                <div class="form-group">
+                    <label for="artifact-name">Name (Optional)</label>
+                    <input type="text" id="artifact-name" name="artifact-name" 
+                           placeholder="Custom artifact name" aria-describedby="name-help">
+                    <small id="name-help" class="help-text">Leave blank to auto-generate from URL</small>
+                </div>
+                <button type="submit" class="btn-primary">Upload Artifact</button>
+            </form>
+            <div id="upload-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+        </section>
+
+        <!-- Query Panel -->
+        <section id="panel-query" role="tabpanel" aria-labelledby="tab-query" class="tab-panel" hidden>
+            <div class="panel-header">
+                <h2><span class="section-icon" aria-hidden="true">🔍</span> Search Artifacts</h2>
+                <p class="panel-description">Find artifacts using name search, regex patterns, or browse all</p>
+            </div>
+            
+            <div class="query-method-selector" role="radiogroup" aria-labelledby="query-method-label">
+                <p id="query-method-label" class="form-label">Search Method:</p>
+                <label class="radio-label">
+                    <input type="radio" name="query-method" value="name" checked aria-checked="true">
+                    <span>By Name</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="query-method" value="regex" aria-checked="false">
+                    <span>By Regex</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="query-method" value="wildcard" aria-checked="false">
+                    <span>List All (Wildcard)</span>
+                </label>
+            </div>
+
+            <form id="query-form" aria-label="Query artifacts form" class="enhanced-form">
+                <div class="form-group" id="query-name-group">
+                    <label for="query-name">Artifact Name <span class="required" aria-label="required">*</span></label>
+                    <input type="text" id="query-name" name="query-name" 
+                           placeholder="Enter artifact name" required aria-required="true">
+                </div>
+                <div class="form-group" id="query-regex-group" hidden>
+                    <label for="query-regex">Regular Expression <span class="required" aria-label="required">*</span></label>
+                    <input type="text" id="query-regex" name="query-regex" 
+                           placeholder="^pattern.*$" aria-describedby="regex-help">
+                    <small id="regex-help" class="help-text">Enter a valid regex pattern</small>
+                </div>
+                <div class="form-group">
+                    <label for="query-types">Filter by Types (Optional)</label>
+                    <div class="checkbox-group" role="group" aria-labelledby="query-types">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="query-types" value="model">
+                            <span>Model</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="query-types" value="dataset">
+                            <span>Dataset</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="query-types" value="code">
+                            <span>Code</span>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Search</button>
+            </form>
+            <div id="query-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+        </section>
+
+        <!-- View & Download Panel -->
+        <section id="panel-view" role="tabpanel" aria-labelledby="tab-view" class="tab-panel" hidden>
+            <div class="panel-header">
+                <h2><span class="section-icon" aria-hidden="true">📥</span> View & Download</h2>
+                <p class="panel-description">Retrieve artifact details and download links by ID</p>
+            </div>
+            <form id="view-form" aria-label="View artifact form" class="enhanced-form">
+                <div class="form-group">
+                    <label for="view-type">Artifact Type <span class="required" aria-label="required">*</span></label>
+                    <select id="view-type" name="view-type" required aria-required="true">
+                        <option value="">Select type...</option>
+                        <option value="model">Model</option>
+                        <option value="dataset">Dataset</option>
+                        <option value="code">Code</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="view-id">Artifact ID <span class="required" aria-label="required">*</span></label>
+                    <input type="text" id="view-id" name="view-id" 
+                           placeholder="Enter artifact ID" required aria-required="true">
+                </div>
+                <button type="submit" class="btn-primary">View Artifact</button>
+            </form>
+            <div id="view-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+        </section>
+
+        <!-- Rate Models Panel -->
+        <section id="panel-rate" role="tabpanel" aria-labelledby="tab-rate" class="tab-panel" hidden>
+            <div class="panel-header">
+                <h2><span class="section-icon" aria-hidden="true">⭐</span> Model Ratings</h2>
+                <p class="panel-description">Get comprehensive quality metrics and performance scores</p>
+            </div>
+            <form id="rate-form" aria-label="Rate model form" class="enhanced-form">
+                <div class="form-group">
+                    <label for="rate-id">Model ID <span class="required" aria-label="required">*</span></label>
+                    <input type="text" id="rate-id" name="rate-id" 
+                           placeholder="Enter model artifact ID" required aria-required="true">
+                </div>
+                <button type="submit" class="btn-primary">Get Ratings</button>
+            </form>
+            <div id="rate-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+        </section>
+
+        <!-- Advanced Panel -->
+        <section id="panel-advanced" role="tabpanel" aria-labelledby="tab-advanced" class="tab-panel" hidden>
+            <div class="panel-header">
+                <h2><span class="section-icon" aria-hidden="true">⚙️</span> Advanced Features</h2>
+                <p class="panel-description">Explore lineage graphs, storage costs, and license compatibility</p>
+            </div>
+            
+            <div class="advanced-section">
+                <h3>Model Lineage</h3>
+                <form id="lineage-form" aria-label="Model lineage form" class="enhanced-form">
+                    <div class="form-group">
+                        <label for="lineage-id">Model ID <span class="required" aria-label="required">*</span></label>
+                        <input type="text" id="lineage-id" name="lineage-id" 
+                               placeholder="Enter model ID" required aria-required="true">
+                    </div>
+                    <button type="submit" class="btn-secondary">Get Lineage</button>
+                </form>
+                <div id="lineage-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+            </div>
+
+            <div class="advanced-section">
+                <h3>Storage Cost</h3>
+                <form id="cost-form" aria-label="Storage cost form" class="enhanced-form">
+                    <div class="form-group">
+                        <label for="cost-type">Artifact Type <span class="required" aria-label="required">*</span></label>
+                        <select id="cost-type" name="cost-type" required aria-required="true">
+                            <option value="">Select type...</option>
+                            <option value="model">Model</option>
+                            <option value="dataset">Dataset</option>
+                            <option value="code">Code</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cost-id">Artifact ID <span class="required" aria-label="required">*</span></label>
+                        <input type="text" id="cost-id" name="cost-id" 
+                               placeholder="Enter artifact ID" required aria-required="true">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cost-dependency" name="cost-dependency">
+                            <span>Include Dependencies</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-secondary">Calculate Cost</button>
+                </form>
+                <div id="cost-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+            </div>
+
+            <div class="advanced-section">
+                <h3>License Check</h3>
+                <form id="license-form" aria-label="License check form" class="enhanced-form">
+                    <div class="form-group">
+                        <label for="license-model-id">Model ID <span class="required" aria-label="required">*</span></label>
+                        <input type="text" id="license-model-id" name="license-model-id" 
+                               placeholder="Enter model ID" required aria-required="true">
+                    </div>
+                    <div class="form-group">
+                        <label for="license-github-url">GitHub URL <span class="required" aria-label="required">*</span></label>
+                        <input type="url" id="license-github-url" name="license-github-url" 
+                               placeholder="https://github.com/owner/repo" required aria-required="true">
+                    </div>
+                    <button type="submit" class="btn-secondary">Check License</button>
+                </form>
+                <div id="license-result" role="status" aria-live="polite" aria-atomic="true" class="result-area"></div>
+            </div>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2025 Project Phase 2 - Team 109 &mdash; Purdue University</p>
+
+    <footer role="contentinfo">
+        <div class="footer-content">
+            <p>&copy; 2025 Model Hub - Team 109</p>
+            <p class="footer-links">
+                <span>Purdue University</span>
+                <span aria-hidden="true">•</span>
+                <span>ECE 461</span>
+            </p>
+        </div>
     </footer>
+    
     <script src="main.js"></script>
 </body>
 </html>
