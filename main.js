@@ -4,6 +4,35 @@
 const baseUrl = "https://9h4tsnso06.execute-api.us-east-2.amazonaws.com";
 
 // ============================================
+// Dark Mode Toggle
+// ============================================
+function initializeDarkMode() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+    
+    // Set initial theme
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.body.classList.add('dark-mode');
+    }
+    
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        
+        // Update ARIA label
+        themeToggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        themeToggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    });
+    
+    // Update initial ARIA label
+    const isDark = document.body.classList.contains('dark-mode');
+    themeToggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    themeToggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+// ============================================
 // Tab Management
 // ============================================
 function initializeTabs() {
@@ -611,6 +640,7 @@ function initializeLicenseForm() {
 // Initialize Everything
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
+    initializeDarkMode();
     initializeTabs();
     initializeQueryMethodToggle();
     initializeUploadForm();
