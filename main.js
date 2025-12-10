@@ -156,6 +156,64 @@ function escapeHtml(text) {
 }
 
 // ============================================
+// Progress Indicators
+// ============================================
+function createProgressSteps(element, steps) {
+    const stepsHtml = steps.map((step, index) => `
+        <div class="progress-step" data-step="${index}">
+            <div class="progress-step-circle">${index + 1}</div>
+            <div class="progress-step-label">${escapeHtml(step)}</div>
+        </div>
+    `).join('');
+    
+    element.innerHTML = `
+        <div class="progress-container">
+            <div class="progress-steps">
+                ${stepsHtml}
+            </div>
+        </div>
+    `;
+}
+
+function updateProgressStep(element, stepIndex, status = 'active') {
+    const steps = element.querySelectorAll('.progress-step');
+    steps.forEach((step, index) => {
+        step.classList.remove('active', 'completed');
+        if (index < stepIndex) {
+            step.classList.add('completed');
+        } else if (index === stepIndex && status === 'active') {
+            step.classList.add('active');
+        }
+    });
+}
+
+function completeAllSteps(element) {
+    const steps = element.querySelectorAll('.progress-step');
+    steps.forEach(step => {
+        step.classList.remove('active');
+        step.classList.add('completed');
+    });
+}
+
+function createProgressBar(element, percentage = 0) {
+    element.innerHTML = `
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${percentage}%"></div>
+        </div>
+        <div class="progress-text">${percentage}%</div>
+    `;
+}
+
+function updateProgressBar(element, percentage) {
+    const bar = element.querySelector('.progress-bar');
+    const text = element.querySelector('.progress-text');
+    if (bar && text) {
+        bar.style.width = `${percentage}%`;
+        text.textContent = `${percentage}%`;
+    }
+}
+
+// ============================================
 // Upload Artifact
 // ============================================
 function initializeUploadForm() {
@@ -169,7 +227,9 @@ function initializeUploadForm() {
         const url = document.getElementById('artifact-url').value;
         const name = document.getElementById('artifact-name').value;
 
-        showLoading(resultDiv);
+        // Show progress steps
+        createProgressSteps(resultDiv, ['Validating', 'Uploading', 'Processing']);
+        updateProgressStep(resultDiv, 0);
 
         try {
             const payload = { url };
@@ -177,17 +237,27 @@ function initializeUploadForm() {
                 payload.name = name.trim();
             }
 
+            // Simulate validation step
+            await new Promise(resolve => setTimeout(resolve, 500));
+            updateProgressStep(resultDiv, 1);
+
             const response = await fetch(`${baseUrl}/artifact/${artifactType}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
+            updateProgressStep(resultDiv, 2);
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             const data = await response.json();
 
             if (response.ok) {
-                showSuccess(resultDiv, `Artifact uploaded successfully! ID: ${data.metadata.id}`);
-                showInfo(resultDiv, 'Artifact Details', data);
+                completeAllSteps(resultDiv);
+                setTimeout(() => {
+                    showSuccess(resultDiv, `Artifact uploaded successfully! ID: ${data.metadata.id}`);
+                    showInfo(resultDiv, 'Artifact Details', data);
+                }, 500);
                 form.reset();
             } else {
                 showError(resultDiv, data.detail || 'Upload failed');
@@ -399,10 +469,31 @@ function displayRatings(element, rating) {
         { label: 'Tree Score', value: rating.tree_score, latency: rating.tree_score_latency },
     ];
 
+    // Create unique ID for this chart
+    const radarChartId = 'radarChart-' + Date.now();
+    const barChartId = 'barChart-' + Date.now();
+    const pieChartId = 'pieChart-' + Date.now();
+
     element.innerHTML = `
         <div class="success-message">
             <h3>Model Ratings: ${escapeHtml(rating.name)}</h3>
             <p><strong>Category:</strong> ${escapeHtml(rating.category)}</p>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">📊 Performance Radar</div>
+                    <div class="chart-wrapper">
+                        <canvas id="${radarChartId}"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">📈 Metric Scores</div>
+                    <div class="chart-wrapper">
+                        <canvas id="${barChartId}"></canvas>
+                    </div>
+                </div>
+            </div>
             
             <table role="table" aria-label="Model rating metrics">
                 <thead>
@@ -423,37 +514,201 @@ function displayRatings(element, rating) {
                 </tbody>
             </table>
 
-            <h4>Size Scores by Platform</h4>
-            <table role="table" aria-label="Size scores by platform">
-                <thead>
-                    <tr>
-                        <th scope="col">Platform</th>
-                        <th scope="col">Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <th scope="row">Raspberry Pi</th>
-                        <td>${rating.size_score.raspberry_pi.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Jetson Nano</th>
-                        <td>${rating.size_score.jetson_nano.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Desktop PC</th>
-                        <td>${rating.size_score.desktop_pc.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">AWS Server</th>
-                        <td>${rating.size_score.aws_server.toFixed(2)}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h4>Size Scores by Platform</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="${pieChartId}"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h4>Platform Compatibility</h4>
+                    <table role="table" aria-label="Size scores by platform">
+                        <thead>
+                            <tr>
+                                <th scope="col">Platform</th>
+                                <th scope="col">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">Raspberry Pi</th>
+                                <td>${rating.size_score.raspberry_pi.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Jetson Nano</th>
+                                <td>${rating.size_score.jetson_nano.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Desktop PC</th>
+                                <td>${rating.size_score.desktop_pc.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">AWS Server</th>
+                                <td>${rating.size_score.aws_server.toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <p><small><strong>Size Score Latency:</strong> ${rating.size_score_latency.toFixed(2)}s</small></p>
         </div>
     `;
     element.setAttribute('aria-busy', 'false');
+
+    // Create charts after DOM is updated
+    setTimeout(() => {
+        createRadarChart(radarChartId, metrics);
+        createBarChart(barChartId, metrics);
+        createPieChart(pieChartId, rating.size_score);
+    }, 100);
+}
+
+function createRadarChart(canvasId, metrics) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    // Select key metrics for radar chart
+    const radarMetrics = metrics.filter(m => 
+        ['Ramp Up Time', 'Bus Factor', 'Code Quality', 'Reproducibility', 'Reviewedness', 'Tree Score'].includes(m.label)
+    );
+
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: radarMetrics.map(m => m.label),
+            datasets: [{
+                label: 'Score',
+                data: radarMetrics.map(m => m.value),
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(0, 123, 255, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        stepSize: 0.2
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function createBarChart(canvasId, metrics) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: metrics.map(m => m.label),
+            datasets: [{
+                label: 'Score',
+                data: metrics.map(m => m.value),
+                backgroundColor: [
+                    'rgba(0, 123, 255, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(23, 162, 184, 0.8)',
+                    'rgba(108, 117, 125, 0.8)',
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(118, 75, 162, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 159, 64, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(0, 123, 255, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(23, 162, 184, 1)',
+                    'rgba(108, 117, 125, 1)',
+                    'rgba(102, 126, 234, 1)',
+                    'rgba(118, 75, 162, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function createPieChart(canvasId, sizeScores) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Raspberry Pi', 'Jetson Nano', 'Desktop PC', 'AWS Server'],
+            datasets: [{
+                data: [
+                    sizeScores.raspberry_pi,
+                    sizeScores.jetson_nano,
+                    sizeScores.desktop_pc,
+                    sizeScores.aws_server
+                ],
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(0, 123, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(0, 123, 255, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
 }
 
 // ============================================
@@ -488,6 +743,8 @@ function initializeLineageForm() {
 }
 
 function displayLineage(element, lineage) {
+    const graphId = 'lineage-graph-' + Date.now();
+    
     const nodesTable = lineage.nodes.length > 0 ? `
         <h4>Nodes</h4>
         <table role="table" aria-label="Lineage nodes">
@@ -535,11 +792,149 @@ function displayLineage(element, lineage) {
     element.innerHTML = `
         <div class="success-message">
             <h3>Lineage Graph</h3>
+            
+            ${lineage.nodes.length > 0 ? `
+                <div class="lineage-graph-container">
+                    <div class="chart-title">🔗 Interactive Dependency Graph</div>
+                    <div id="${graphId}"></div>
+                    <div class="graph-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #007bff;"></div>
+                            <span>Model</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #28a745;"></div>
+                            <span>Dataset</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffc107;"></div>
+                            <span>Code</span>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
             ${nodesTable}
             ${edgesTable}
         </div>
     `;
     element.setAttribute('aria-busy', 'false');
+
+    // Create interactive graph if we have nodes
+    if (lineage.nodes.length > 0) {
+        setTimeout(() => {
+            createLineageGraph(graphId, lineage);
+        }, 100);
+    }
+}
+
+function createLineageGraph(containerId, lineage) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Determine node type based on source or artifact_id pattern
+    const getNodeType = (node) => {
+        const source = node.source.toLowerCase();
+        if (source.includes('model')) return 'model';
+        if (source.includes('dataset')) return 'dataset';
+        if (source.includes('code')) return 'code';
+        return 'model'; // default
+    };
+
+    const getNodeColor = (type) => {
+        switch (type) {
+            case 'model': return '#007bff';
+            case 'dataset': return '#28a745';
+            case 'code': return '#ffc107';
+            default: return '#6c757d';
+        }
+    };
+
+    // Create nodes for vis-network
+    const nodes = lineage.nodes.map(node => {
+        const type = getNodeType(node);
+        return {
+            id: node.artifact_id,
+            label: node.name || node.artifact_id.substring(0, 8),
+            title: `${node.name}\nID: ${node.artifact_id}\nSource: ${node.source}`,
+            color: {
+                background: getNodeColor(type),
+                border: getNodeColor(type),
+                highlight: {
+                    background: getNodeColor(type),
+                    border: '#000'
+                }
+            },
+            font: {
+                color: '#ffffff',
+                size: 14,
+                face: 'Arial'
+            },
+            shape: 'box',
+            margin: 10,
+            widthConstraint: {
+                minimum: 80,
+                maximum: 150
+            }
+        };
+    });
+
+    // Create edges for vis-network
+    const edges = lineage.edges.map((edge, index) => ({
+        id: index,
+        from: edge.from_node_artifact_id,
+        to: edge.to_node_artifact_id,
+        label: edge.relationship,
+        arrows: 'to',
+        color: {
+            color: '#848484',
+            highlight: '#007bff'
+        },
+        font: {
+            size: 12,
+            align: 'middle'
+        },
+        smooth: {
+            type: 'cubicBezier',
+            roundness: 0.5
+        }
+    }));
+
+    // Create the network
+    const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+    const options = {
+        layout: {
+            hierarchical: {
+                enabled: true,
+                direction: 'UD',
+                sortMethod: 'directed',
+                levelSeparation: 150,
+                nodeSpacing: 150
+            }
+        },
+        physics: {
+            enabled: false
+        },
+        interaction: {
+            dragNodes: true,
+            dragView: true,
+            zoomView: true,
+            hover: true,
+            tooltipDelay: 200
+        },
+        nodes: {
+            borderWidth: 2,
+            borderWidthSelected: 3,
+            shadow: true
+        },
+        edges: {
+            width: 2,
+            shadow: true,
+            selectionWidth: 3
+        }
+    };
+
+    new vis.Network(container, data, options);
 }
 
 // Cost
@@ -574,19 +969,39 @@ function initializeCostForm() {
 
 function displayCost(element, costData, artifactId) {
     const cost = costData[artifactId];
+    const chartId = 'costChart-' + Date.now();
+    
+    // Calculate breakdown if we have dependencies
+    const hasStandalone = cost.standalone_cost !== undefined;
+    const standaloneCost = hasStandalone ? cost.standalone_cost : cost.total_cost;
+    const dependencyCost = hasStandalone ? (cost.total_cost - cost.standalone_cost) : 0;
     
     element.innerHTML = `
         <div class="success-message">
-            <h3>Storage Cost</h3>
+            <h3>Storage Cost Analysis</h3>
+            
+            ${hasStandalone && dependencyCost > 0 ? `
+                <div class="chart-container">
+                    <div class="chart-title">💾 Cost Breakdown</div>
+                    <div class="chart-wrapper" style="height: 300px;">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                </div>
+            ` : ''}
+            
             <table role="table" aria-label="Storage cost breakdown">
                 <tbody>
-                    ${cost.standalone_cost !== undefined ? `
+                    ${hasStandalone ? `
                         <tr>
                             <th scope="row">Standalone Cost</th>
-                            <td><strong>${cost.standalone_cost.toFixed(2)} MB</strong></td>
+                            <td><strong>${standaloneCost.toFixed(2)} MB</strong></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Dependencies Cost</th>
+                            <td><strong>${dependencyCost.toFixed(2)} MB</strong></td>
                         </tr>
                     ` : ''}
-                    <tr>
+                    <tr style="border-top: 2px solid var(--border-color);">
                         <th scope="row">Total Cost</th>
                         <td><strong>${cost.total_cost.toFixed(2)} MB</strong></td>
                     </tr>
@@ -595,6 +1010,57 @@ function displayCost(element, costData, artifactId) {
         </div>
     `;
     element.setAttribute('aria-busy', 'false');
+
+    // Create pie chart if we have breakdown
+    if (hasStandalone && dependencyCost > 0) {
+        setTimeout(() => {
+            createCostPieChart(chartId, standaloneCost, dependencyCost);
+        }, 100);
+    }
+}
+
+function createCostPieChart(canvasId, standaloneCost, dependencyCost) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Standalone', 'Dependencies'],
+            datasets: [{
+                data: [standaloneCost, dependencyCost],
+                backgroundColor: [
+                    'rgba(0, 123, 255, 0.8)',
+                    'rgba(108, 117, 125, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(0, 123, 255, 1)',
+                    'rgba(108, 117, 125, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value.toFixed(2)} MB (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // License Check
