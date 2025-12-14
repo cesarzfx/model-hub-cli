@@ -93,8 +93,9 @@ class ReproducibilityMetric(Metric):
             gh_meta = getattr(model, "github_metadata")
 
         if not gh_meta:
-            logger.info("ReproducibilityMetric: No GitHub metadata found → 0.0")
-            return 0.0
+            logger.info("ReproducibilityMetric: No GitHub metadata, using HF heuristic")
+            hf_meta = model.hf_metadata or {}
+            return self._heuristic_score(hf_meta)
 
         # Check if demo files exist in repository
         has_demo = self._has_demo_files(gh_meta)
@@ -272,3 +273,32 @@ class ReproducibilityMetric(Metric):
 
         logger.debug("Found {} potential demo files", len(unique_files))
         return unique_files[:5]  # Limit to first 5 candidates
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic reproducibility based on HuggingFace metadata.
+        """
+        score = 0.0
+
+        # Clear license
+        tags = hf_meta.get("tags", [])
+        if any("license:" in tag for tag in tags):
+            score += 0.4
+
+        # Safetensors format aids reproducibility
+        if "safetensors" in tags:
+            score += 0.2
+
+        # Major library support
+        if hf_meta.get("library_name") in ["transformers", "diffusers", "timm"]:
+            score += 0.3
+
+        # ArXiv papers provide methodology
+        if any("arxiv:" in tag for tag in tags):
+            score += 0.2
+
+        # Widget examples show reproducible usage
+        if hf_meta.get("widgetData") or hf_meta.get("cardData", {}).get("widget"):
+            score += 0.2
+
+        return min(1.0, score)

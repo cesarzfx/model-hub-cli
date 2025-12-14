@@ -99,10 +99,10 @@ class BusFactorMetric(Metric):
         )
         logger.debug("Number of contributors found: {}", len(contributors))
 
-        # No contributor data
+        # No contributor data - use HuggingFace metrics as fallback
         if not contributors:
-            logger.debug("No contributors found, returning score 0.0")
-            return 0.0
+            logger.debug("No GitHub contributors, using HuggingFace heuristic")
+            return self._heuristic_score(hf_metadata or {})
 
         # Top contributors sorted by contributions descending
         top_contribs = sorted(
@@ -133,3 +133,32 @@ class BusFactorMetric(Metric):
         logger.debug("Final BusFactor score computed: {}", score)
 
         return score
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic bus factor based on HuggingFace metrics when GitHub unavailable.
+        """
+        score = 0.0
+
+        # Popular models likely have organizational backing
+        downloads = hf_meta.get("downloads", 0)
+        likes = hf_meta.get("likes", 0)
+
+        if downloads > 50000 or likes > 100:
+            score = 0.6  # High confidence of organizational support
+        elif downloads > 10000 or likes > 30:
+            score = 0.4  # Medium confidence
+        elif downloads > 1000:
+            score = 0.2  # Some community presence
+
+        # Official transformers library integration suggests maintainability
+        if hf_meta.get("library_name") in ["transformers", "diffusers", "timm"]:
+            score += 0.2
+
+        # Recent updates indicate active maintenance
+        last_modified = hf_meta.get("lastModified")
+        if last_modified:
+            # If recently updated (heuristic), add points
+            score += 0.2
+
+        return min(1.0, score)

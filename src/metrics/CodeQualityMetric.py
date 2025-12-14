@@ -76,8 +76,10 @@ class CodeQualityMetric(Metric):
             gh_meta = getattr(model, "github_metadata")
 
         if not gh_meta:
-            logger.info("CodeQualityMetric: No GitHub metadata found → 0.0")
-            return 0.0
+            logger.info("CodeQualityMetric: No GitHub metadata, using HF heuristic")
+            # Use HuggingFace metrics as proxy
+            hf_meta = model.hf_metadata or {}
+            return self._heuristic_score(hf_meta)
 
         clone_url = gh_meta.get("clone_url")
 
@@ -275,3 +277,35 @@ class CodeQualityMetric(Metric):
 
         logger.debug("Found docs: {} → doc score: {}", found_docs, score)
         return score
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic code quality based on HuggingFace metadata.
+        """
+        score = 0.0
+
+        # Integration with major libraries suggests code quality
+        library = hf_meta.get("library_name", "")
+        if library in ["transformers", "diffusers", "timm", "sentence-transformers"]:
+            score += 0.4
+
+        # Popularity suggests quality
+        downloads = hf_meta.get("downloads", 0)
+        if downloads > 50000:
+            score += 0.3
+        elif downloads > 10000:
+            score += 0.2
+
+        # Multiple format support suggests quality
+        tags = hf_meta.get("tags", [])
+        formats = sum(
+            1
+            for tag in tags
+            if tag in ["pytorch", "tensorflow", "tf", "jax", "safetensors"]
+        )
+        if formats >= 3:
+            score += 0.2
+        elif formats >= 2:
+            score += 0.1
+
+        return min(1.0, score)

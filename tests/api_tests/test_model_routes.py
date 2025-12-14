@@ -57,8 +57,52 @@ class TestModelRating:
 
         response = client.get("/artifact/model/m1/rate")
 
-        # Endpoint returns 200 with default zero scores when URL missing
+        # Should return 400 when URL is missing
+        assert response.status_code == 400
+        assert "url" in response.json()["detail"].lower()
+
+    def test_rate_model_with_valid_url(self, temp_artifacts_dir, monkeypatch):
+        """Test rating model with valid HuggingFace URL."""
+        artifact = {
+            "metadata": {"id": "m2", "name": "test-model", "type": "model"},
+            "data": {"url": "https://huggingface.co/gpt2"},
+        }
+        artifact_store.store_artifact("m2", artifact)
+
+        response = client.get("/artifact/model/m2/rate")
+
+        # Should return 200 with rating data
         assert response.status_code == 200
+        data = response.json()
+        
+        # Validate ModelRating schema fields
+        assert "name" in data
+        assert "category" in data
+        assert "net_score" in data
+        assert "net_score_latency" in data
+        assert "ramp_up_time" in data
+        assert "bus_factor" in data
+        assert "performance_claims" in data
+        assert "license" in data
+        assert "dataset_and_code_score" in data
+        assert "dataset_quality" in data
+        assert "code_quality" in data
+        assert "reproducibility" in data
+        assert "reviewedness" in data
+        assert "tree_score" in data
+        assert "size_score" in data
+        
+        # Validate size_score structure
+        size_score = data["size_score"]
+        assert "raspberry_pi" in size_score
+        assert "jetson_nano" in size_score
+        assert "desktop_pc" in size_score
+        assert "aws_server" in size_score
+        
+        # All scores should be between 0 and 1
+        for key in data:
+            if key.endswith("_score") and key != "size_score":
+                assert 0.0 <= data[key] <= 1.0, f"{key} should be between 0 and 1"
 
 
 class TestModelLineage:

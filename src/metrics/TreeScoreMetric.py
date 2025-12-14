@@ -73,7 +73,34 @@ class TreeScoreMetric(Metric):
         parent_names = self._extract_parent_models(model)
 
         if not parent_names:
-            logger.info("No parent models found in metadata")
+            logger.info("No parent models, checking for base model heuristics")
+            # Check if this is a well-known base model or fine-tuned variant
+            hf_meta = model.hf_metadata or {}
+            model_id = hf_meta.get("modelId", "").lower()
+            tags = hf_meta.get("tags", [])
+
+            # Check if it's derived from a known base model
+            base_models = [
+                "bert",
+                "gpt",
+                "t5",
+                "roberta",
+                "distilbert",
+                "albert",
+                "electra",
+                "bart",
+                "pegasus",
+                "llama",
+                "mistral",
+                "falcon",
+            ]
+            if any(base in model_id for base in base_models):
+                # It's a variant or fine-tuned version
+                if "distil" in model_id or "mini" in model_id or "small" in model_id:
+                    return 0.85  # Distilled models have clear lineage
+                elif any(dataset in str(tags) for dataset in ["squad", "glue", "mnli"]):
+                    return 0.75  # Fine-tuned on specific dataset
+                return 0.5  # Some model lineage
             return 0.0
 
         logger.debug(f"Found parent models: {parent_names}")

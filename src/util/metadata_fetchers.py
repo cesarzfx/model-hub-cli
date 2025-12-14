@@ -88,23 +88,35 @@ class HuggingFaceFetcher(MetadataFetcher):
 
         # Parse URL to Extract Organization ID and Model ID
         # - Expect URL Format: huggingface.co/{organization}/{model_id}
-        parts = parsed.path.strip("/").split("/")
-        if len(parts) < 2:
+        # - OR: huggingface.co/{model_id} (will follow redirects)
+        parts = [p for p in parsed.path.strip("/").split("/") if p]
+        if len(parts) < 1:
             logger.warning(f"Malformed HuggingFace model URL: {url}")
             return metadata
 
-        organization, model_id = parts[0], parts[1]
-        api_url = f"{self.BASE_API_URL}/{organization}/{model_id}"
-        repo_id = f"{organization}/{model_id}"
+        # Handle both formats: org/model or just model
+        if len(parts) >= 2:
+            organization, model_id = parts[0], parts[1]
+            api_url = f"{self.BASE_API_URL}/{organization}/{model_id}"
+            repo_id = f"{organization}/{model_id}"
+        else:
+            # Single part - let HuggingFace API handle redirects
+            model_id = parts[0]
+            api_url = f"{self.BASE_API_URL}/{model_id}"
+            repo_id = model_id
 
         # Fetch General Model Metadata from Hugging Face API
         try:
             logger.debug(f"Fetching HF metadata from: {api_url}")
-            resp = self.session.get(api_url, timeout=5)
+            resp = self.session.get(api_url, timeout=5, allow_redirects=True)
 
             if resp.ok:
                 logger.debug(f"HF metadata retrieved for model: {model_id}")
                 metadata = resp.json()
+                # Update repo_id if we got redirected (e.g., bert-base-uncased -> google-bert/bert-base-uncased)
+                if "id" in metadata:
+                    repo_id = metadata["id"]
+                    logger.debug(f"Using repo_id from metadata: {repo_id}")
             else:
                 logger.warning(
                     f"Failed to retrieve HF metadata (HTTP {resp.status_code}) "

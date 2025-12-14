@@ -76,7 +76,30 @@ class DatasetQualityMetric(Metric):
         try:
             # Get dataset metadata
             if not model.dataset_metadata:
-                logger.warning(f"No dataset metadata available for {model.datasetLink}")
+                logger.warning(f"No dataset metadata, checking HuggingFace tags")
+                # Check if model has dataset tags in HuggingFace
+                hf_meta = model.hf_metadata or {}
+                tags = hf_meta.get("tags", [])
+                dataset_tags = [tag for tag in tags if tag.startswith("dataset:")]
+                if dataset_tags:
+                    logger.info(f"Found dataset tags: {dataset_tags}")
+                    # Known high-quality datasets
+                    quality_datasets = {
+                        "squad": 1.0,
+                        "squad_v2": 1.0,
+                        "glue": 0.9,
+                        "super_glue": 0.9,
+                        "imagenet": 1.0,
+                        "coco": 0.95,
+                        "common_voice": 0.9,
+                        "librispeech": 0.9,
+                    }
+                    for tag in dataset_tags:
+                        dataset_name = tag.split(":")[1].lower()
+                        if dataset_name in quality_datasets:
+                            return quality_datasets[dataset_name]
+                    # Generic dataset present = moderate quality
+                    return 0.7
                 return 0.0
 
             # Generate LLM prompt

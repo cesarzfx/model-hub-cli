@@ -27,23 +27,23 @@ class TestReviewednessMetric(BaseMetricTest):
         self.metric = ReviewednessMetric()
 
     def test_no_github_metadata(self):
-        """Test that -1.0 is returned when no GitHub metadata is available"""
+        """Test that 0.0 is returned when no GitHub metadata is available"""
         model = StubModelData(
             modelLink="",
             codeLink=None,
             datasetLink=None,
         )
-        self.run_metric_test(self.metric, model, -1.0)
+        self.run_metric_test(self.metric, model, 0.0)
 
     def test_no_pull_requests(self):
-        """Test that -1.0 is returned when no pull requests are found"""
+        """Test that 0.0 is returned when no pull requests are found"""
         model = StubModelData(
             modelLink="",
             codeLink=None,
             datasetLink=None,
             _github_metadata={"pull_requests": []},
         )
-        self.run_metric_test(self.metric, model, -1.0)
+        self.run_metric_test(self.metric, model, 0.0)
 
     def test_no_merged_pull_requests(self):
         """Test that 0.0 is returned when no PRs have been merged"""

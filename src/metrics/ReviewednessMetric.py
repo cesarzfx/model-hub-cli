@@ -22,10 +22,9 @@ Heuristics
 - Calculate fraction of reviewed PRs vs total merged PRs
 - Consider projects with no PRs as having no reviewedness data (-1.0)
 
-Scoring (-1.0 or 0.0–1.0)
--------------------------
-- -1.0: No GitHub repository or no pull request data available
-- 0.0: No merged pull requests have been reviewed
+Scoring (0.0–1.0)
+-----------------
+- 0.0: No GitHub repository, no pull request data, or no reviewed PRs
 - 0.0–1.0: Fraction of merged PRs that were reviewed before merging
 
 Limitations
@@ -53,8 +52,8 @@ class ReviewednessMetric(Metric):
     """
     Evaluates code reviewedness based on pull request review data.
     Returns:
-        -1.0 if no GitHub repository is available
         0.0-1.0 representing fraction of code introduced through reviewed PRs
+        0.0 if no GitHub repository is available
     """
 
     def evaluate(self, model: ModelData) -> float:
@@ -65,21 +64,22 @@ class ReviewednessMetric(Metric):
             model: ModelData object containing GitHub metadata
 
         Returns:
-            float: Reviewedness score from -1.0 (no data) to 1.0 (all reviewed)
+            float: Reviewedness score from 0.0 (no data/reviews) to 1.0 (all reviewed)
         """
         logger.debug("Evaluating ReviewednessMetric...")
 
         # Get GitHub metadata
         github_metadata = model.github_metadata
         if not github_metadata:
-            logger.info("ReviewednessMetric: No GitHub metadata found → -1.0")
-            return -1.0
+            logger.info("ReviewednessMetric: No GitHub metadata, using HF heuristic")
+            hf_meta = model.hf_metadata or {}
+            return self._heuristic_score(hf_meta)
 
         # Get pull requests data
         pull_requests = github_metadata.get("pull_requests", [])
         if not pull_requests:
-            logger.info("ReviewednessMetric: No pull requests found → -1.0")
-            return -1.0
+            logger.info("ReviewednessMetric: No pull requests found → 0.0")
+            return 0.0
 
         reviewedness_score = self._calculate_reviewedness(pull_requests)
         logger.debug("ReviewednessMetric: Calculated score {:.3f}", reviewedness_score)
@@ -97,7 +97,7 @@ class ReviewednessMetric(Metric):
             float: Fraction of reviewed merged PRs (0.0 to 1.0)
         """
         if not pull_requests:
-            return -1.0
+            return 0.0
 
         merged_prs = [pr for pr in pull_requests if pr.get("merged_at") is not None]
 
@@ -130,3 +130,31 @@ class ReviewednessMetric(Metric):
         )
 
         return reviewedness_fraction
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic reviewedness based on HuggingFace community engagement.
+        """
+        score = 0.0
+
+        # High likes suggest community review
+        likes = hf_meta.get("likes", 0)
+        if likes > 100:
+            score += 0.5
+        elif likes > 30:
+            score += 0.3
+        elif likes > 10:
+            score += 0.1
+
+        # High downloads suggest usage and implicit review
+        downloads = hf_meta.get("downloads", 0)
+        if downloads > 50000:
+            score += 0.4
+        elif downloads > 10000:
+            score += 0.2
+
+        # Official library integration implies review
+        if hf_meta.get("library_name") in ["transformers", "diffusers"]:
+            score += 0.2
+
+        return min(1.0, score)

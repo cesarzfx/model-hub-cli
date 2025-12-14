@@ -166,7 +166,9 @@ class Model(ModelData):
             else:
                 if isinstance(val, dict):
                     return sum(val.values()) / len(val) if val else 0.0
-                return val if val is not None else 0.0
+                # Clamp negative values to 0.0 (e.g., -1.0 from ReviewednessMetric)
+                score = val if val is not None else 0.0
+                return max(0.0, score)
 
         # Compute Net Score and Net Latency
         license_score = safe_score("LicenseMetric")

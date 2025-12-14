@@ -8,7 +8,7 @@ if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
 from typing import Any, Dict
-from mangum import Mangum
+from mangum import Mangum  # type: ignore[import-not-found]
 from src.api.main import app
 
 handler = Mangum(app)

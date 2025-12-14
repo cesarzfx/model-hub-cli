@@ -19,7 +19,7 @@ def test_huggingface_fetcher_success():
     metadata = fetcher.fetch_metadata(url)
 
     session.get.assert_called_once_with(
-        "https://huggingface.co/api/models/organization/model-id", timeout=5
+        "https://huggingface.co/api/models/organization/model-id", timeout=5, allow_redirects=True
     )
     assert metadata == {"id": "model-id", "downloads": 1000}
 
@@ -28,7 +28,7 @@ def test_huggingface_fetcher_invalid_url_missing_path():
     session = MagicMock()
     fetcher = HuggingFaceFetcher(session=session)
 
-    # Missing model path parts (less than 2 parts in path)
+    # Empty path - should return empty dict
     metadata = fetcher.fetch_metadata("https://huggingface.co/")
     assert metadata == {}
     session.get.assert_not_called()
