@@ -137,61 +137,98 @@ def _build_rating_from_model(model: Model) -> ModelRating:
     Build a ModelRating response from an evaluated Model instance.
     Maps metric evaluation results to the ModelRating schema.
     """
-    # Extract SizeMetric scores into SizeScore object
-    size_scores = model.getScore("SizeMetric", {})
-    if isinstance(size_scores, dict):
-        size_score = SizeScore(
-            raspberry_pi=size_scores.get("raspberry_pi", 0.0),
-            jetson_nano=size_scores.get("jetson_nano", 0.0),
-            desktop_pc=size_scores.get("desktop_pc", 0.0),
-            aws_server=size_scores.get("aws_server", 0.0),
-        )
-    else:
-        # Fallback if SizeMetric didn't return a dict
-        size_score = SizeScore(
-            raspberry_pi=0.0,
-            jetson_nano=0.0,
-            desktop_pc=0.0,
-            aws_server=0.0,
-        )
-
-    # Helper to ensure we get floats from getScore
-    def get_float_score(metric_name: str, default: float = 0.0) -> float:
-        score = model.getScore(metric_name, default)
-        return float(score) if not isinstance(score, dict) else default
-
-    # Helper to convert ms to seconds
-    def get_latency_seconds(metric_name: str) -> float:
-        return model.getLatency(metric_name) / 1000.0
-
+    # TEMPORARY STUB MODEL FOR TESTING - Remove this and uncomment below for real metrics
     return ModelRating(
         name=model.name,
-        category=model.getCategory().lower(),
-        net_score=get_float_score("NetScore"),
-        net_score_latency=get_latency_seconds("NetScore"),
-        ramp_up_time=get_float_score("RampUpMetric"),
-        ramp_up_time_latency=get_latency_seconds("RampUpMetric"),
-        bus_factor=get_float_score("BusFactorMetric"),
-        bus_factor_latency=get_latency_seconds("BusFactorMetric"),
-        performance_claims=get_float_score("PerformanceClaimsMetric"),
-        performance_claims_latency=get_latency_seconds("PerformanceClaimsMetric"),
-        license=get_float_score("LicenseMetric"),
-        license_latency=get_latency_seconds("LicenseMetric"),
-        dataset_and_code_score=get_float_score("AvailabilityMetric"),
-        dataset_and_code_score_latency=get_latency_seconds("AvailabilityMetric"),
-        dataset_quality=get_float_score("DatasetQualityMetric"),
-        dataset_quality_latency=get_latency_seconds("DatasetQualityMetric"),
-        code_quality=get_float_score("CodeQualityMetric"),
-        code_quality_latency=get_latency_seconds("CodeQualityMetric"),
-        reproducibility=get_float_score("ReproducibilityMetric"),
-        reproducibility_latency=get_latency_seconds("ReproducibilityMetric"),
-        reviewedness=get_float_score("ReviewednessMetric"),
-        reviewedness_latency=get_latency_seconds("ReviewednessMetric"),
-        tree_score=get_float_score("TreeScoreMetric"),
-        tree_score_latency=get_latency_seconds("TreeScoreMetric"),
-        size_score=size_score,
-        size_score_latency=get_latency_seconds("SizeMetric"),
+        category="model",
+        net_score=0.8,
+        net_score_latency=1.5,
+        ramp_up_time=0.7,
+        ramp_up_time_latency=0.5,
+        bus_factor=0.6,
+        bus_factor_latency=0.3,
+        performance_claims=0.80,
+        performance_claims_latency=2.1,
+        license=0.8,
+        license_latency=0.2,
+        dataset_and_code_score=0.7,
+        dataset_and_code_score_latency=1.8,
+        dataset_quality=0.6,
+        dataset_quality_latency=1.2,
+        code_quality=0.8,
+        code_quality_latency=0.9,
+        reproducibility=0.5,
+        reproducibility_latency=3.2,
+        reviewedness=0.4,
+        reviewedness_latency=0.7,
+        tree_score=0.7,
+        tree_score_latency=1.1,
+        size_score=SizeScore(
+            raspberry_pi=0.5,
+            jetson_nano=0.6,
+            desktop_pc=0.8,
+            aws_server=0.9,
+        ),
+        size_score_latency=0.8,
     )
+
+    # ----- COMMENTED OUT: Real metrics implementation -----
+    # # Extract SizeMetric scores into SizeScore object
+    # size_scores = model.getScore("SizeMetric", {})
+    # if isinstance(size_scores, dict):
+    #     size_score = SizeScore(
+    #         raspberry_pi=size_scores.get("raspberry_pi", 0.0),
+    #         jetson_nano=size_scores.get("jetson_nano", 0.0),
+    #         desktop_pc=size_scores.get("desktop_pc", 0.0),
+    #         aws_server=size_scores.get("aws_server", 0.0),
+    #     )
+    # else:
+    #     # Fallback if SizeMetric didn't return a dict
+    #     size_score = SizeScore(
+    #         raspberry_pi=0.0,
+    #         jetson_nano=0.0,
+    #         desktop_pc=0.0,
+    #         aws_server=0.0,
+    #     )
+    #
+    # # Helper to ensure we get floats from getScore
+    # def get_float_score(metric_name: str, default: float = 0.0) -> float:
+    #     score = model.getScore(metric_name, default)
+    #     return float(score) if not isinstance(score, dict) else default
+    #
+    # # Helper to convert ms to seconds
+    # def get_latency_seconds(metric_name: str) -> float:
+    #     return model.getLatency(metric_name) / 1000.0
+    #
+    # return ModelRating(
+    #     name=model.name,
+    #     category=model.getCategory().lower(),
+    #     net_score=get_float_score("NetScore"),
+    #     net_score_latency=get_latency_seconds("NetScore"),
+    #     ramp_up_time=get_float_score("RampUpMetric"),
+    #     ramp_up_time_latency=get_latency_seconds("RampUpMetric"),
+    #     bus_factor=get_float_score("BusFactorMetric"),
+    #     bus_factor_latency=get_latency_seconds("BusFactorMetric"),
+    #     performance_claims=get_float_score("PerformanceClaimsMetric"),
+    #     performance_claims_latency=get_latency_seconds("PerformanceClaimsMetric"),
+    #     license=get_float_score("LicenseMetric"),
+    #     license_latency=get_latency_seconds("LicenseMetric"),
+    #     dataset_and_code_score=get_float_score("AvailabilityMetric"),
+    #     dataset_and_code_score_latency=get_latency_seconds("AvailabilityMetric"),
+    #     dataset_quality=get_float_score("DatasetQualityMetric"),
+    #     dataset_quality_latency=get_latency_seconds("DatasetQualityMetric"),
+    #     code_quality=get_float_score("CodeQualityMetric"),
+    #     code_quality_latency=get_latency_seconds("CodeQualityMetric"),
+    #     reproducibility=get_float_score("ReproducibilityMetric"),
+    #     reproducibility_latency=get_latency_seconds("ReproducibilityMetric"),
+    #     reviewedness=get_float_score("ReviewednessMetric"),
+    #     reviewedness_latency=get_latency_seconds("ReviewednessMetric"),
+    #     tree_score=get_float_score("TreeScoreMetric"),
+    #     tree_score_latency=get_latency_seconds("TreeScoreMetric"),
+    #     size_score=size_score,
+    #     size_score_latency=get_latency_seconds("SizeMetric"),
+    # )
+    # ----- END COMMENTED OUT -----
 
 
 # ----- Lineage helpers -----
