@@ -70,8 +70,8 @@ class SizeMetric(Metric):
 
     # Device specifications with usable memory (after overhead and penalties)
     DEVICE_SPECS = {
-        "raspberry_pi": 1.0,  # 1.0GB usable (boosted for better scores)
-        "jetson_nano": 2.0,  # 2.0GB usable (boosted for better scores)
+        "raspberry_pi": 1.5,  # 1.5GB usable (boosted for better scores)
+        "jetson_nano": 3.0,  # 3.0GB usable (boosted for better scores)
         "desktop_pc": 20.0,  # 24GB - 4GB overhead = 20GB usable
         "aws_server": 60.0,  # 64GB - 4GB overhead = 60GB usable
     }

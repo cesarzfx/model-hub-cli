@@ -7,7 +7,7 @@ from tests.conftest import StubModelData
 @pytest.mark.parametrize(
     "code_link, dataset_link, github_meta, dataset_meta, hf_meta, expected_score",
     [
-        # All available: HF (1) + GitHub (1) + Dataset (1) = 3/3 = 1.0
+        # GitHub (1) + Dataset (1) = 2/2 = 1.0
         (
             "https://github.com/org/repo",
             "https://huggingface.co/datasets/org/data",
@@ -16,34 +16,34 @@ from tests.conftest import StubModelData
             {"downloads": 100},
             1.0,
         ),
-        # HF (1) + GitHub (1) + Dataset missing (0) = 2/3 = 0.67
+        # GitHub (1) + Dataset missing (0) = 1/2 = 0.5
         (
             "https://github.com/org/repo",
             "https://huggingface.co/datasets/org/data",
             {"stars": 999},
             {},
             {"downloads": 100},
-            0.67,
+            0.5,
         ),
-        # HF (1) + GitHub missing (0) + Dataset (1) = 2/3 = 0.67
+        # GitHub missing (0) + Dataset (1) = 1/2 = 0.5
         (
             "https://github.com/org/repo",
             "https://huggingface.co/datasets/org/data",
             {},
             {"name": "dataset"},
             {"downloads": 100},
-            0.67,
+            0.5,
         ),
-        # HF (1) + GitHub missing (0) + Dataset missing (0) = 1/3 = 0.33
+        # GitHub missing (0) + Dataset missing (0) = 0/2 = 0.0
         (
             "https://github.com/org/repo",
             "https://huggingface.co/datasets/org/data",
             {},
             {},
             {"downloads": 100},
-            0.33,
+            0.0,
         ),
-        # HF (1) + GitHub (1), no dataset link = 2/2 = 1.0
+        # GitHub (1), no dataset link = 1/1 = 1.0
         (
             "https://github.com/org/repo",
             None,
@@ -52,7 +52,7 @@ from tests.conftest import StubModelData
             {"downloads": 100},
             1.0,
         ),
-        # HF (1) + Dataset (1), no code link = 2/2 = 1.0
+        # Dataset (1), no code link = 1/1 = 1.0
         (
             None,
             "https://huggingface.co/datasets/org/data",
@@ -61,7 +61,16 @@ from tests.conftest import StubModelData
             {"downloads": 100},
             1.0,
         ),
-        # No HF metadata = 0/1 = 0.0
+        # No links but HF metadata with downloads = 1.0 (fallback)
+        (
+            None,
+            None,
+            {},
+            {},
+            {"downloads": 100},
+            1.0,
+        ),
+        # No links and no HF metadata = 0.0
         (
             None,
             None,
