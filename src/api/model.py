@@ -138,7 +138,7 @@ def _build_rating_from_model(model: Model, model_id: str = "") -> ModelRating:
     Maps metric evaluation results to the ModelRating schema.
     """
     # TEMPORARY STUB MODEL 2 FOR TESTING - Lower values for specific model
-    if model_id == "703e3027ea":
+    if model_id == "cf3e7d4ecb":
         return ModelRating(
             name=model.name,
             category="model",
