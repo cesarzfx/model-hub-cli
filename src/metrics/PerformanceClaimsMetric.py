@@ -60,18 +60,24 @@ class PerformanceClaimsMetric(Metric):
         """
         logger.info("Evaluating PerformanceClaimsMetric with LLMClient...")
 
-        # Gather relevant metadata for the prompt
-        metadata = model._hf_metadata if hasattr(model, "_hf_metadata") else {}
+        # Get HuggingFace metadata
+        metadata = model.hf_metadata or {}
 
-        if metadata is None:
-            logger.warning("No metadata available for model.")
-            return 0.0
+        if not metadata:
+            logger.warning("No metadata available, using heuristic")
+            return self._heuristic_score({})
+
         card_data = {}
         readme = ""
         if metadata.get("cardData"):
             card_data = metadata.get("cardData", {})
         if metadata.get("readme"):
             readme = metadata.get("readme", "")
+
+        # If no README, use heuristic
+        if not readme:
+            logger.info("No README for PerformanceClaimsMetric, using heuristic")
+            return self._heuristic_score(metadata)
 
         # Compose a prompt for the LLM using extracted metadata
         prompt = (
@@ -93,5 +99,40 @@ class PerformanceClaimsMetric(Metric):
         response = self.llm_client.send_prompt(prompt)
         score = self.llm_client.extract_score(response)
 
+        # If LLM fails, use heuristic
+        if score == 0.0 and response is None:
+            logger.info("LLM failed, using heuristic for PerformanceClaimsMetric")
+            return self._heuristic_score(metadata)
+
         logger.info("PerformanceClaimsMetric: LLM-based score -> {}", score)
         return min(score, 1.0)
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic scoring based on HuggingFace metadata.
+        """
+        score = 0.0
+        tags = hf_meta.get("tags", [])
+
+        # ArXiv papers strongly indicate performance claims
+        arxiv_count = sum(1 for tag in tags if "arxiv:" in tag)
+        if arxiv_count >= 2:
+            score += 0.40  # Multiple papers = strong claims
+        elif arxiv_count == 1:
+            score += 0.25  # One paper = some claims
+
+        # Widget data with examples suggests documented performance
+        if hf_meta.get("widgetData") or hf_meta.get("cardData", {}).get("widget"):
+            score += 0.15
+
+        # Specific dataset tags indicate benchmarking
+        benchmark_datasets = ["squad", "glue", "superglue", "imagenet", "coco"]
+        if any(f"dataset:{ds}" in tag for tag in tags for ds in benchmark_datasets):
+            score += 0.25
+
+        # Popular models likely have performance claims
+        downloads = hf_meta.get("downloads", 0)
+        if downloads > 10000:
+            score += 0.12
+
+        return min(0.85, score)  # Cap at 0.85 for heuristic

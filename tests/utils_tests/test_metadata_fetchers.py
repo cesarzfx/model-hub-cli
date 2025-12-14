@@ -1,5 +1,9 @@
 from unittest.mock import MagicMock
-from src.util.metadata_fetchers import HuggingFaceFetcher, GitHubFetcher, DatasetFetcher
+from src.util.metadata_fetchers import (
+    HuggingFaceFetcher,
+    GitHubFetcher,
+    DatasetFetcher,
+)
 
 
 # HuggingFaceFetcher Tests
@@ -15,7 +19,9 @@ def test_huggingface_fetcher_success():
     metadata = fetcher.fetch_metadata(url)
 
     session.get.assert_called_once_with(
-        "https://huggingface.co/api/models/organization/model-id", timeout=5
+        "https://huggingface.co/api/models/organization/model-id",
+        timeout=5,
+        allow_redirects=True,
     )
     assert metadata == {"id": "model-id", "downloads": 1000}
 
@@ -24,7 +30,7 @@ def test_huggingface_fetcher_invalid_url_missing_path():
     session = MagicMock()
     fetcher = HuggingFaceFetcher(session=session)
 
-    # Missing model path parts (less than 2 parts in path)
+    # Empty path - should return empty dict
     metadata = fetcher.fetch_metadata("https://huggingface.co/")
     assert metadata == {}
     session.get.assert_not_called()
@@ -85,11 +91,16 @@ def test_github_fetcher_success():
     commit_response = MagicMock(ok=True)
     commit_response.json.return_value = [{}] * 150  # 150 commits
 
+    # Mock pull requests response
+    pulls_response = MagicMock(ok=True)
+    pulls_response.json.return_value = []
+
     session.get.side_effect = [
         contrib_response,
         license_response,
         repo_response,
         commit_response,
+        pulls_response,
     ]
 
     fetcher = GitHubFetcher(session=session)
@@ -103,8 +114,10 @@ def test_github_fetcher_success():
         "stargazers_count": 100,
         "forks_count": 50,
         "commits_count": 150,
+        "pull_requests": [],
+        "pull_requests_count": 0,
     }
-    assert session.get.call_count == 4
+    assert session.get.call_count == 5
 
 
 def test_github_fetcher_invalid_url_not_github():
@@ -149,11 +162,15 @@ def test_github_fetcher_partial_failure():
     commit_response = MagicMock(ok=True)
     commit_response.json.return_value = [{}] * 150  # 150 commits
 
+    pulls_response = MagicMock(ok=True)
+    pulls_response.json.return_value = []
+
     session.get.side_effect = [
         contrib_response,
         license_response,
         repo_response,
         commit_response,
+        pulls_response,
     ]
 
     fetcher = GitHubFetcher(session=session)
@@ -165,8 +182,10 @@ def test_github_fetcher_partial_failure():
         "stargazers_count": 100,
         "forks_count": 50,
         "commits_count": 150,
+        "pull_requests": [],
+        "pull_requests_count": 0,
     }
-    assert session.get.call_count == 4
+    assert session.get.call_count == 5
 
 
 def test_github_fetcher_no_url():

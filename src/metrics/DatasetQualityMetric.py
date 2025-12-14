@@ -65,7 +65,7 @@ class DatasetQualityMetric(Metric):
         self.api_url: str = "https://genai.rcac.purdue.edu/api/chat/completions"
         self.headers: Dict[str, str] = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def evaluate(self, model: ModelData) -> float:
@@ -76,7 +76,40 @@ class DatasetQualityMetric(Metric):
         try:
             # Get dataset metadata
             if not model.dataset_metadata:
-                logger.warning(f"No dataset metadata available for {model.datasetLink}")
+                logger.warning(f"No dataset metadata, checking HuggingFace tags")
+                # Check if model has dataset tags in HuggingFace
+                hf_meta = model.hf_metadata or {}
+                tags = hf_meta.get("tags", [])
+                dataset_tags = [tag for tag in tags if tag.startswith("dataset:")]
+                if dataset_tags:
+                    logger.info(f"Found dataset tags: {dataset_tags}")
+                    # Known high-quality datasets
+                    quality_datasets = {
+                        "squad": 0.85,
+                        "squad_v2": 0.85,
+                        "glue": 0.80,
+                        "super_glue": 0.80,
+                        "imagenet": 0.85,
+                        "coco": 0.80,
+                        "common_voice": 0.75,
+                        "librispeech": 0.75,
+                        "wikitext": 0.70,
+                        "bookcorpus": 0.70,
+                        "c4": 0.70,
+                        "openwebtext": 0.65,
+                    }
+                    for tag in dataset_tags:
+                        dataset_name = tag.split(":")[1].lower()
+                        if dataset_name in quality_datasets:
+                            return quality_datasets[dataset_name]
+                    # Generic dataset present = moderate quality
+                    return 0.6
+                # No dataset tags but popular model = assume some training data
+                downloads = hf_meta.get("downloads", 0)
+                if downloads > 50000:
+                    return 0.45
+                elif downloads > 10000:
+                    return 0.35
                 return 0.0
 
             # Generate LLM prompt
@@ -124,13 +157,8 @@ No explanation needed.
         try:
             body: Dict[str, Any] = {
                 "model": "llama3.1:latest",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "stream": False  # We want a complete response, not streaming
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,  # We want a complete response, not streaming
             }
 
             response = requests.post(self.api_url, headers=self.headers, json=body)
@@ -167,7 +195,7 @@ No explanation needed.
         """Extract numerical score from LLM response."""
         try:
             # Look for decimal numbers
-            matches: List[str] = re.findall(r'\b\d*\.?\d+\b', content)
+            matches: List[str] = re.findall(r"\b\d*\.?\d+\b", content)
 
             if matches:
                 # Take the first number found

@@ -54,7 +54,11 @@ class TestBusFactorMetric(BaseMetricTest):
         self.run_metric_test(self.metric, model, 0.0)
 
     def test_contributors_even_distribution(self):
-        contribs = [{"contributions": 10}, {"contributions": 10}, {"contributions": 10}]
+        contribs = [
+            {"contributions": 10},
+            {"contributions": 10},
+            {"contributions": 10},
+        ]
         model = StubModelData(
             modelLink="",
             codeLink=None,
@@ -65,7 +69,11 @@ class TestBusFactorMetric(BaseMetricTest):
         self.run_metric_test(self.metric, model, expected)
 
     def test_contributors_skewed_distribution(self):
-        contribs = [{"contributions": 10}, {"contributions": 5}, {"contributions": 1}]
+        contribs = [
+            {"contributions": 10},
+            {"contributions": 5},
+            {"contributions": 1},
+        ]
         model = StubModelData(
             modelLink="",
             codeLink=None,

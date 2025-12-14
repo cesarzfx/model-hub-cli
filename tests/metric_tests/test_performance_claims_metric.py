@@ -69,4 +69,3 @@ def test_llm_score_invalid_metadata(metric):
     metric.llm_client.extract_score.return_value = 0.0
     score = metric.evaluate(model)
     assert score == 0.0
-

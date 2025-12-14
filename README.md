@@ -61,6 +61,35 @@ Basic command structure:
 External contributions are not being accepted at this time.
 
 
+# API Endpoints
+
+The following REST API endpoints are implemented in this repository (see `src/api/`):
+
+## Artifact Endpoints (`artifact_routes.py`)
+- `POST /artifacts` — List artifacts by query
+- `GET /artifact/byName/{name}` — Get artifacts by exact name
+- `POST /artifact/byRegEx` — Get artifacts by regex pattern
+- `POST /artifact/{artifact_type}` — Create a new artifact
+- `GET /artifacts/{artifact_type}/{id}` — Get a single artifact by type and id
+- `DELETE /artifacts/{artifact_type}/{id}` — Delete an artifact
+- `GET /artifact/{artifact_type}/{id}/cost` — Get storage cost for an artifact
+
+## Authentication (`auth.py`)
+- `PUT /authenticate` — Authenticate a user and get an access token
+
+## Health & Tracks (`health.py`)
+- `GET /health` — Liveness probe
+- `GET /tracks` — Get planned tracks
+
+## Model Endpoints (`model.py`)
+- `GET /artifact/model/{id}/rate` — Get ratings for a model artifact
+- `GET /artifact/model/{id}/lineage` — Get lineage graph for a model artifact
+- `POST /artifact/model/{id}/license-check` — License check for a model artifact
+
+## Registry Reset (`reset.py`)
+- `DELETE /reset` — Reset registry state (clears all artifacts)
+
+
 ## License
 
 This project is licensed under the GNU Lesser General Public License v2.1. See the [LICENSE](LICENSE) file for details.

@@ -56,9 +56,7 @@ class LLMClient:
         # Use provided key or fallback to environment variable
         self.api_key: str = os.getenv("GEN_AI_STUDIO_API_KEY", "")
         if not self.api_key:
-            logger.warning(
-                "GEN_AI_STUDIO_API_KEY is not set. LLM requests may fail."
-            )
+            logger.warning("GEN_AI_STUDIO_API_KEY is not set. LLM requests may fail.")
 
     def send_prompt(self, prompt: str, model: Optional[str] = None) -> Optional[str]:
         # Prepare Request Headers and Body

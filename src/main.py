@@ -1,11 +1,19 @@
 """
 main.py
 =======
-CLI entry point for the Model Hub evaluation tool.
+CLI entry point for the Model Hub evaluation tool and AWS Lambda handler.
 
+This script serves two purposes:
+1. CLI tool for model evaluation
+2. AWS Lambda handler for serverless API
+
+For CLI usage:
 This script reads a CSV-style input file where each line includes up to three URLs
 (model, code, dataset — in any order). It validates and classifies the URLs, evaluates
 each model using a fixed set of metrics, and prints results to STDOUT in NDJSON format.
+
+For Lambda usage:
+The script provides a handler that returns a simple health check response.
 
 Responsibilities
 ----------------
@@ -13,6 +21,7 @@ Responsibilities
 - Parse and classify URLs from the input file.
 - Coordinate evaluation via the `ModelCatalogue` class.
 - Output one NDJSON object per model to STDOUT.
+- Serve as AWS Lambda handler.
 
 Expected Input Format
 ---------------------
@@ -74,7 +83,7 @@ def validate_github_token() -> bool:
         return False
 
     # Skip validation in test environment
-    if any(x in sys.modules for x in ['pytest', '_pytest']):
+    if any(x in sys.modules for x in ["pytest", "_pytest"]):
         logger.info("Skipping GitHub token validation in test environment")
         return True
 
@@ -82,7 +91,7 @@ def validate_github_token() -> bool:
         # Test token with a simple API call
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "Authorization": f"token {github_token}"
+            "Authorization": f"token {github_token}",
         }
 
         # Use a simple API call to validate the token
@@ -113,7 +122,7 @@ def run_catalogue(file_path: str) -> int:
     catalogue = ModelCatalogue()
 
     try:
-        with open(file_path, 'r', encoding='ascii') as f:
+        with open(file_path, "r", encoding="ascii") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -121,7 +130,7 @@ def run_catalogue(file_path: str) -> int:
                     continue
 
                 # Parse URL Fields into Parts
-                parts = [part.strip() for part in line.split(',')]
+                parts = [part.strip() for part in line.split(",")]
 
                 # Exactly 3 URL Fields Must Exist
                 if len(parts) != 3:
@@ -168,14 +177,16 @@ def configure_logging() -> None:
     else:
         return  # Silent -- No Logging
 
+    # Ensure logs directory exists
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+
     if log_file:
         try:
-            if not os.path.exists(log_file):
-                print(f"Log file does not exist: '{log_file}'")
-                sys.exit(1)
-            logger.add(log_file, rotation="1 MB", level=log_level)
+            log_file_path = os.path.join(log_dir, log_file)
+            logger.add(log_file_path, rotation="1 MB", level=log_level)
         except Exception as e:
-            print(f"Failed to configure log file '{log_file}': {e}")
+            print(f"Failed to configure log file '{log_file_path}': {e}")
             exit(1)
     else:
         logger.add(sys.stderr, level=log_level)

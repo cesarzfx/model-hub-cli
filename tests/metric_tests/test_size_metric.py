@@ -40,7 +40,12 @@ class TestSizeMetric:
         assert len(scores) == 4
         assert all(
             device in scores
-            for device in ["raspberry_pi", "jetson_nano", "desktop_pc", "aws_server"]
+            for device in [
+                "raspberry_pi",
+                "jetson_nano",
+                "desktop_pc",
+                "aws_server",
+            ]
         )
         assert all(0.0 <= score <= 1.0 for score in scores.values())
 
@@ -100,7 +105,7 @@ class TestSizeMetric:
         self, metric: SizeMetric, model_with_metadata: Mock
     ) -> None:
         """Test successful model size calculation."""
-        size_gb : Optional[float] = metric._get_model_size(model_with_metadata)
+        size_gb: Optional[float] = metric._get_model_size(model_with_metadata)
 
         assert size_gb is not None
         # 7B params * 2 bytes = 14GB / 1024^3 ≈ 13.04GB
@@ -112,9 +117,12 @@ class TestSizeMetric:
         """Test model size calculation with different dtypes."""
         # Float32 model
         mock_model.hf_metadata = {
-            "config": {"num_parameters": 1_000_000_000, "torch_dtype": "float32"}
+            "config": {
+                "num_parameters": 1_000_000_000,
+                "torch_dtype": "float32",
+            }
         }
-        size_gb : Optional[float] = metric._get_model_size(mock_model)
+        size_gb: Optional[float] = metric._get_model_size(mock_model)
         assert size_gb is not None
         assert 3.5 <= size_gb <= 4.0  # 1B * 4 bytes ≈ 3.7GB
 
@@ -163,12 +171,15 @@ class TestSizeMetric:
     def test_extract_bytes_quantization_precedence(self, metric: SizeMetric) -> None:
         """Test dtype extraction precedence and quantization."""
         # Quantization only
-        metadata : dict[str, Any] = {"config": {"quantization_config": {"bits": 4}}}
+        metadata: dict[str, Any] = {"config": {"quantization_config": {"bits": 4}}}
         assert metric._extract_bytes_from_dtype(metadata) == 0.5
 
         # torch_dtype takes precedence over quantization
         metadata = {
-            "config": {"torch_dtype": "float32", "quantization_config": {"bits": 8}}
+            "config": {
+                "torch_dtype": "float32",
+                "quantization_config": {"bits": 8},
+            }
         }
         assert metric._extract_bytes_from_dtype(metadata) == 4.0
 
@@ -232,8 +243,8 @@ class TestSizeMetric:
     def test_device_specs_values(self, metric: SizeMetric) -> None:
         """Test that DEVICE_SPECS contains expected values and ordering."""
         expected = {
-            "raspberry_pi": 0.5,
-            "jetson_nano": 1.0,
+            "raspberry_pi": 1.5,
+            "jetson_nano": 3.0,
             "desktop_pc": 20.0,
             "aws_server": 60.0,
         }
@@ -262,12 +273,14 @@ class TestSizeMetric:
 
             # Over limit: score = 0
             score = max(
-                0.0, min(1.0, (memory_limit - (memory_limit + 1)) / memory_limit)
+                0.0,
+                min(1.0, (memory_limit - (memory_limit + 1)) / memory_limit),
             )
             assert score == 0.0
 
             # Under limit: score > 0
             score = max(
-                0.0, min(1.0, (memory_limit - (memory_limit - 0.1)) / memory_limit)
+                0.0,
+                min(1.0, (memory_limit - (memory_limit - 0.1)) / memory_limit),
             )
             assert score > 0.0

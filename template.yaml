@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  
+Resources:
+  ModelHubFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/lambda_handler.lambda_handler
+      Runtime: python3.9
+      Architectures:
+          - x86_64
+      AutoPublishAlias: prod
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          ARTIFACTS_TABLE_NAME: model-hub-artifacts
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: model-hub-artifacts
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  # API Gateway
+  ModelHubApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowMethods:
+          - 'GET'
+          - 'POST'
+          - 'PUT'
+          - 'DELETE'
+          - 'OPTIONS'
+        AllowHeaders:
+          - '*'
+        AllowOrigins:
+          - '*'
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ModelHubApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt ModelHubFunction.Arn

@@ -20,6 +20,10 @@ class AvailabilityMetric(Metric):
         total_checks = 0
         successful_checks = 0
 
+        # HuggingFace metadata availability (only count if code/dataset links exist)
+        hf_meta = model.hf_metadata or {}
+        has_meaningful_hf = bool(hf_meta.get("downloads") or hf_meta.get("likes"))
+
         # GitHub repo metadata
         if model.codeLink:
             total_checks += 1
@@ -38,13 +42,19 @@ class AvailabilityMetric(Metric):
             else:
                 logger.warning("Dataset metadata is missing")
 
+        # If no code/dataset links, use HF metadata as fallback
         if total_checks == 0:
+            if has_meaningful_hf:
+                logger.info("No code/dataset links, using HF metadata availability")
+                return 0.7  # Moderate score for HF-only models
             logger.warning("No resources to evaluate availability for")
             return 0.0
 
         score = successful_checks / total_checks
         logger.info(
             "AvailabilityMetric: {}/{} resources available -> {}",
-            successful_checks, total_checks, score
+            successful_checks,
+            total_checks,
+            score,
         )
         return score

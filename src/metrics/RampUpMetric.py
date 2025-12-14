@@ -16,13 +16,15 @@ class RampUpMetric(Metric):
         logger.debug("Evaluating Ramp Up Time Metric...")
 
         # Extract README
-        readme_text: Optional[str] = model.hf_metadata.get("readme")
-        if not readme_text:
-            logger.warning(
-                "No README.md or model_index.json data found in model metadata; "
-                "returning 0.0 score."
-            )
-            return 0.0
+        hf_meta = model.hf_metadata or {}
+        readme_maybe = hf_meta.get("readme")
+
+        # Fallback heuristic if no README or LLM fails
+        if not readme_maybe or not isinstance(readme_maybe, str):
+            logger.warning("No README found, using HuggingFace metadata heuristics")
+            return self._heuristic_score(hf_meta)
+
+        readme_text: str = readme_maybe
 
         # Extract Relevant Sections
         readme_text = self._extract_relevant_sections(readme_text or "")
@@ -49,8 +51,13 @@ class RampUpMetric(Metric):
         full_prompt: str = readme_text + "\n\n" + prompt
 
         # Query the LLM and extract the score
-        response: str = self.llm.send_prompt(full_prompt)
+        response: Optional[str] = self.llm.send_prompt(full_prompt)
         score: float = self.llm.extract_score(response)
+
+        # If LLM fails, use heuristic
+        if score == 0.0 and response is None:
+            logger.info("LLM failed, using heuristic score for RampUpMetric")
+            return self._heuristic_score(hf_meta)
 
         logger.debug(f"Ramp Up Time Metric score: {score}")
         return score
@@ -67,7 +74,7 @@ class RampUpMetric(Metric):
             "Installation": ["installation", "setup", "getting started"],
             "Usage": ["usage", "how to use", "examples"],
             "Dataset": ["dataset", "data", "inputs"],
-            "Training": ["training", "train", "fine-tune", "finetune"]
+            "Training": ["training", "train", "fine-tune", "finetune"],
         }
 
         # Match H2/H3 markdown headings and their content
@@ -99,3 +106,42 @@ class RampUpMetric(Metric):
 
         combined = "\n\n".join(extracted_sections.values())
         return combined[:max_chars] + ("\n..." if len(combined) > max_chars else "")
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic scoring based on HuggingFace metadata when LLM is unavailable.
+        """
+        score = 0.0
+
+        # Base score from documentation presence
+        if hf_meta.get("readme"):
+            readme_len = len(str(hf_meta.get("readme", "")))
+            if readme_len > 5000:
+                score += 0.20  # Detailed README
+            elif readme_len > 1000:
+                score += 0.15  # Basic README
+            elif readme_len > 100:
+                score += 0.08  # Minimal README
+
+        # Widget data indicates usage examples
+        if hf_meta.get("widgetData") or hf_meta.get("cardData", {}).get("widget"):
+            score += 0.15  # Has usage examples
+
+        # Pipeline tag indicates clear use case
+        if hf_meta.get("pipeline_tag"):
+            score += 0.12  # Clear task definition
+
+        # Popularity indicates community validation and documentation
+        downloads = hf_meta.get("downloads", 0)
+        likes = hf_meta.get("likes", 0)
+        if downloads > 10000 or likes > 50:
+            score += 0.20  # Popular models tend to have better docs
+        elif downloads > 1000 or likes > 10:
+            score += 0.12
+
+        # ArXiv papers indicate academic documentation
+        tags = hf_meta.get("tags", [])
+        if any("arxiv:" in tag for tag in tags):
+            score += 0.08
+
+        return min(0.85, score)  # Cap at 0.85 for heuristic

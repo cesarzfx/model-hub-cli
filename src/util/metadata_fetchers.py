@@ -50,6 +50,10 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import requests
+from typing import Union
+
+# Type alias for GitHub API params
+GitHubParams = dict[str, Union[str, int]]
 from huggingface_hub import hf_hub_download
 from loguru import logger
 
@@ -67,7 +71,7 @@ class HuggingFaceFetcher(MetadataFetcher):
 
     def fetch_metadata(self, url: Optional[str]) -> Dict[str, Any]:
         """Fetch Hugging Face model metadata."""
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Verify URL Exists
         # - Should Always Exist for Model URLs
@@ -84,23 +88,35 @@ class HuggingFaceFetcher(MetadataFetcher):
 
         # Parse URL to Extract Organization ID and Model ID
         # - Expect URL Format: huggingface.co/{organization}/{model_id}
-        parts = parsed.path.strip("/").split("/")
-        if len(parts) < 2:
+        # - OR: huggingface.co/{model_id} (will follow redirects)
+        parts = [p for p in parsed.path.strip("/").split("/") if p]
+        if len(parts) < 1:
             logger.warning(f"Malformed HuggingFace model URL: {url}")
             return metadata
 
-        organization, model_id = parts[0], parts[1]
-        api_url = f"{self.BASE_API_URL}/{organization}/{model_id}"
-        repo_id = f"{organization}/{model_id}"
+        # Handle both formats: org/model or just model
+        if len(parts) >= 2:
+            organization, model_id = parts[0], parts[1]
+            api_url = f"{self.BASE_API_URL}/{organization}/{model_id}"
+            repo_id = f"{organization}/{model_id}"
+        else:
+            # Single part - let HuggingFace API handle redirects
+            model_id = parts[0]
+            api_url = f"{self.BASE_API_URL}/{model_id}"
+            repo_id = model_id
 
         # Fetch General Model Metadata from Hugging Face API
         try:
             logger.debug(f"Fetching HF metadata from: {api_url}")
-            resp = self.session.get(api_url, timeout=5)
+            resp = self.session.get(api_url, timeout=5, allow_redirects=True)
 
             if resp.ok:
                 logger.debug(f"HF metadata retrieved for model: {model_id}")
                 metadata = resp.json()
+                # Update repo_id if we got redirected (e.g., bert-base-uncased -> google-bert/bert-base-uncased)
+                if "id" in metadata:
+                    repo_id = metadata["id"]
+                    logger.debug(f"Using repo_id from metadata: {repo_id}")
             else:
                 logger.warning(
                     f"Failed to retrieve HF metadata (HTTP {resp.status_code}) "
@@ -136,7 +152,7 @@ class GitHubFetcher(MetadataFetcher):
     def __init__(
         self,
         token: Optional[str] = None,
-        session: Optional[requests.Session] = None
+        session: Optional[requests.Session] = None,
     ) -> None:
         self.token = token
         self.session = session or requests.Session()
@@ -144,7 +160,7 @@ class GitHubFetcher(MetadataFetcher):
 
     def fetch_metadata(self, url: Optional[str]) -> Dict[str, Any]:
         """Fetch GitHub repository metadata."""
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Verify URL Exists
         # - May Not Exist if No Code Link Provided
@@ -213,14 +229,33 @@ class GitHubFetcher(MetadataFetcher):
             # Fetch recent commit activity
             commits_url = f"{self.BASE_API_URL}/{owner}/{repo}/commits"
             logger.debug(f"Fetching GitHub commits from: {commits_url}")
-            params = {"per_page": 100}
-            commits_resp = self.session.get(commits_url, params=params, headers=headers)
+            commit_params: GitHubParams = {"per_page": 100}
+            commits_resp = self.session.get(
+                commits_url, params=commit_params, headers=headers
+            )
             if commits_resp.ok:
                 commits = commits_resp.json()
                 metadata["commits_count"] = len(commits)
             else:
                 logger.warning(
                     f"Failed to fetch commits (HTTP {resp.status_code}) for {url}"
+                )
+
+            # Fetch pull requests for reviewedness metric
+            pulls_url = f"{self.BASE_API_URL}/{owner}/{repo}/pulls"
+            logger.debug(f"Fetching GitHub pull requests from: {pulls_url}")
+            pull_params: GitHubParams = {"state": "closed", "per_page": 100}
+            pulls_resp = self.session.get(
+                pulls_url, params=pull_params, headers=headers
+            )
+            if pulls_resp.ok:
+                pulls = pulls_resp.json()
+                metadata["pull_requests"] = pulls
+                metadata["pull_requests_count"] = len(pulls)
+            else:
+                logger.warning(
+                    f"Failed to fetch pull requests "
+                    f"(HTTP {pulls_resp.status_code}) for {url}"
                 )
 
         except Exception as e:
@@ -231,12 +266,13 @@ class GitHubFetcher(MetadataFetcher):
 
 class DatasetFetcher(MetadataFetcher):
     """Fetches dataset metadata from Hugging Face datasets API."""
+
     def __init__(self, session: Optional[requests.Session] = None) -> None:
         self.session = session or requests.Session()
         self.BASE_API_URL = "https://huggingface.co/api/datasets"
 
     def fetch_metadata(self, url: Optional[str]) -> Dict[str, Any]:
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Verify URL Exists
         # - May Not Exist if No Dataset Link Provided

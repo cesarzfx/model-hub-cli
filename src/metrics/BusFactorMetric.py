@@ -54,8 +54,16 @@ from src.Metric import Metric
 
 class BusFactorMetric(Metric):
     LARGE_COMPANIES = {
-        "google", "facebook", "microsoft", "openai", "huggingface",
-        "amazon", "ibm", "apple", "tencent", "baidu"
+        "google",
+        "facebook",
+        "microsoft",
+        "openai",
+        "huggingface",
+        "amazon",
+        "ibm",
+        "apple",
+        "tencent",
+        "baidu",
     }
 
     MAX_TOP_CONTRIBS = 10
@@ -87,22 +95,19 @@ class BusFactorMetric(Metric):
         # Get contributors from Github metadata
         github_metadata = model.github_metadata
         contributors = (
-            github_metadata.get("contributors", [])
-            if github_metadata else []
+            github_metadata.get("contributors", []) if github_metadata else []
         )
         logger.debug("Number of contributors found: {}", len(contributors))
 
-        # No contributor data
+        # No contributor data - use HuggingFace metrics as fallback
         if not contributors:
-            logger.debug("No contributors found, returning score 0.0")
-            return 0.0
+            logger.debug("No GitHub contributors, using HuggingFace heuristic")
+            return self._heuristic_score(hf_metadata or {})
 
         # Top contributors sorted by contributions descending
         top_contribs = sorted(
-            contributors,
-            key=lambda c: c.get("contributions", 0),
-            reverse=True
-        )[:self.MAX_TOP_CONTRIBS]
+            contributors, key=lambda c: c.get("contributions", 0), reverse=True
+        )[: self.MAX_TOP_CONTRIBS]
 
         # Zero contributors -> minimum score
         num_contribs = len(top_contribs)
@@ -128,3 +133,32 @@ class BusFactorMetric(Metric):
         logger.debug("Final BusFactor score computed: {}", score)
 
         return score
+
+    def _heuristic_score(self, hf_meta: dict) -> float:
+        """
+        Heuristic bus factor based on HuggingFace metrics when GitHub unavailable.
+        """
+        score = 0.0
+
+        # Popular models likely have organizational backing
+        downloads = hf_meta.get("downloads", 0)
+        likes = hf_meta.get("likes", 0)
+
+        if downloads > 50000 or likes > 100:
+            score = 0.6  # High confidence of organizational support
+        elif downloads > 10000 or likes > 30:
+            score = 0.4  # Medium confidence
+        elif downloads > 1000:
+            score = 0.2  # Some community presence
+
+        # Official transformers library integration suggests maintainability
+        if hf_meta.get("library_name") in ["transformers", "diffusers", "timm"]:
+            score += 0.2
+
+        # Recent updates indicate active maintenance
+        last_modified = hf_meta.get("lastModified")
+        if last_modified:
+            # If recently updated (heuristic), add points
+            score += 0.2
+
+        return min(1.0, score)

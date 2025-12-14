@@ -44,7 +44,6 @@ Testing Notes
 - Use mocked metrics to simulate model scoring in tests.
 """
 
-
 import json
 
 from loguru import logger
@@ -57,7 +56,10 @@ from src.metrics.DatasetQualityMetric import DatasetQualityMetric
 from src.metrics.LicenseMetric import LicenseMetric
 from src.metrics.PerformanceClaimsMetric import PerformanceClaimsMetric
 from src.metrics.RampUpMetric import RampUpMetric
+from src.metrics.ReproducibilityMetric import ReproducibilityMetric
+from src.metrics.ReviewednessMetric import ReviewednessMetric
 from src.metrics.SizeMetric import SizeMetric
+from src.metrics.TreeScoreMetric import TreeScoreMetric
 from src.Model import Model
 
 
@@ -76,7 +78,10 @@ class ModelCatalogue:
             SizeMetric(),
             CodeQualityMetric(),
             DatasetQualityMetric(),
-            RampUpMetric()
+            RampUpMetric(),
+            ReviewednessMetric(),
+            ReproducibilityMetric(),
+            TreeScoreMetric(),
         ]
 
     def addModel(self, model: Model) -> None:
@@ -89,7 +94,7 @@ class ModelCatalogue:
             Code URL = '{}'""",
             model.modelLink,
             model.datasetLink,
-            model.codeLink
+            model.codeLink,
         )
 
     def evaluateModels(self) -> None:
@@ -126,6 +131,12 @@ class ModelCatalogue:
             "dataset_quality_latency": model.getLatency("DatasetQualityMetric"),
             "code_quality": model.getScore("CodeQualityMetric"),
             "code_quality_latency": model.getLatency("CodeQualityMetric"),
+            "reviewedness": model.getScore("ReviewednessMetric"),
+            "reviewedness_latency": model.getLatency("ReviewednessMetric"),
+            "reproducibility": model.getScore("ReproducibilityMetric"),
+            "reproducibility_latency": model.getLatency("ReproducibilityMetric"),
+            "tree_score": model.getScore("TreeScoreMetric"),
+            "tree_score_latency": model.getLatency("TreeScoreMetric"),
         }
 
         # Convert model evaluation to a single NDJSON line
