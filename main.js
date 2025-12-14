@@ -1,7 +1,7 @@
 // ============================================
 // Configuration
 // ============================================
-const baseUrl = "https://9h4tsnso06.execute-api.us-east-2.amazonaws.com";
+const baseUrl = "https://j8eg26vhm7.execute-api.us-east-2.amazonaws.com";
 
 // ============================================
 // Dark Mode Toggle
