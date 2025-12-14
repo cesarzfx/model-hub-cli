@@ -111,7 +111,7 @@ class TestReproducibilityMetric(BaseMetricTest):
         score = metric.evaluate(model_with_demo_no_clone)
         assert score == 0.5
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_failure(
         self,
         mock_clone: MagicMock,
@@ -126,7 +126,7 @@ class TestReproducibilityMetric(BaseMetricTest):
         score = metric.evaluate(model_with_demo_and_clone)
         assert score == 0.5
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_demo_execution_fails(
         self,
         mock_clone: MagicMock,
@@ -143,7 +143,7 @@ class TestReproducibilityMetric(BaseMetricTest):
 
     # --- Test Cases for Score = 1.0 (Demo works) ---
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_demo_execution_succeeds(
         self,
         mock_clone: MagicMock,
@@ -219,7 +219,7 @@ class TestReproducibilityMetric(BaseMetricTest):
         gh_meta = {}
         assert metric._has_demo_files(gh_meta) is False
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_success(
         self, mock_clone: MagicMock, metric: ReproducibilityMetric
     ) -> None:
@@ -236,7 +236,7 @@ class TestReproducibilityMetric(BaseMetricTest):
             "https://github.com/test/repo.git", "/tmp/test", depth=1
         )
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_git_command_error(
         self, mock_clone: MagicMock, metric: ReproducibilityMetric
     ) -> None:
@@ -252,7 +252,7 @@ class TestReproducibilityMetric(BaseMetricTest):
 
         assert result is False
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_git_error(
         self, mock_clone: MagicMock, metric: ReproducibilityMetric
     ) -> None:
@@ -268,7 +268,7 @@ class TestReproducibilityMetric(BaseMetricTest):
 
         assert result is False
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_general_exception(
         self, mock_clone: MagicMock, metric: ReproducibilityMetric
     ) -> None:
@@ -451,7 +451,7 @@ class TestReproducibilityMetric(BaseMetricTest):
 
     # --- Integration Tests ---
 
-    @patch("src.metrics.ReproducibilityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     @patch("subprocess.run")
     def test_full_evaluation_success(
         self,

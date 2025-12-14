@@ -28,11 +28,13 @@ Limitations
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
 
-from git import Repo
-from git.exc import GitCommandError, GitError
 from loguru import logger
+
+if TYPE_CHECKING:
+    from git import Repo
+    from git.exc import GitCommandError, GitError
 
 from src.ModelData import ModelData
 from src.Metric import Metric
@@ -145,6 +147,14 @@ class CodeQualityMetric(Metric):
     def _clone_repository(self, clone_url: str, temp_dir: str) -> bool:
         """Clone a repository into the given directory. Returns True if successful."""
         logger.debug("Cloning repo: {} → {}", clone_url, temp_dir)
+        try:
+            # Lazy import to avoid Lambda startup failure when Git is unavailable
+            from git import Repo
+            from git.exc import GitCommandError, GitError
+        except ImportError as e:
+            logger.warning("GitPython unavailable (Git not installed): {}", e)
+            return False
+
         try:
             Repo.clone_from(clone_url, temp_dir, depth=1)
             logger.debug("Clone succeeded.")

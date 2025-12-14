@@ -54,7 +54,7 @@ class TestCodeQualityMetric(BaseMetricTest):
         score = metric.evaluate(model_popularity_only)
         assert score == pytest.approx(0.16, abs=0.01)
 
-    @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_success(
         self, mock_clone: MagicMock, metric: CodeQualityMetric
     ) -> None:
@@ -70,7 +70,7 @@ class TestCodeQualityMetric(BaseMetricTest):
             "https://github.com/test/repo.git", "/tmp/test", depth=1
         )
 
-    @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_failure(
         self, mock_clone: MagicMock, metric: CodeQualityMetric
     ) -> None:
@@ -85,7 +85,7 @@ class TestCodeQualityMetric(BaseMetricTest):
 
         assert result is False
 
-    @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_git_error(
         self, mock_clone: MagicMock, metric: CodeQualityMetric
     ) -> None:
@@ -100,7 +100,7 @@ class TestCodeQualityMetric(BaseMetricTest):
 
         assert result is False
 
-    @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_clone_repository_general_exception(
         self, mock_clone: MagicMock, metric: CodeQualityMetric
     ) -> None:
@@ -139,7 +139,7 @@ class TestCodeQualityMetric(BaseMetricTest):
         score = metric._calculate_commit_score(gh_meta)
         assert score == 0.010
 
-    @patch("src.metrics.CodeQualityMetric.Repo.clone_from")
+    @patch("git.Repo.clone_from")
     def test_full_evaluation_with_clone(
         self,
         mock_clone: MagicMock,

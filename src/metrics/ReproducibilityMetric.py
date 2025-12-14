@@ -35,11 +35,13 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from git import Repo
-from git.exc import GitCommandError, GitError
 from loguru import logger
+
+if TYPE_CHECKING:
+    from git import Repo
+    from git.exc import GitCommandError, GitError
 
 from src.Metric import Metric
 from src.ModelData import ModelData
@@ -169,6 +171,14 @@ class ReproducibilityMetric(Metric):
             bool: True if successful, False otherwise
         """
         logger.debug("Cloning repo: {} → {}", clone_url, temp_dir)
+        try:
+            # Lazy import to avoid Lambda startup failure when Git is unavailable
+            from git import Repo
+            from git.exc import GitCommandError, GitError
+        except ImportError as e:
+            logger.warning("GitPython unavailable (Git not installed): {}", e)
+            return False
+
         try:
             Repo.clone_from(clone_url, temp_dir, depth=1)
             logger.debug("Clone succeeded.")
