@@ -93,13 +93,23 @@ class DatasetQualityMetric(Metric):
                         "coco": 0.95,
                         "common_voice": 0.9,
                         "librispeech": 0.9,
+                        "wikitext": 0.85,
+                        "bookcorpus": 0.85,
+                        "c4": 0.85,
+                        "openwebtext": 0.8,
                     }
                     for tag in dataset_tags:
                         dataset_name = tag.split(":")[1].lower()
                         if dataset_name in quality_datasets:
                             return quality_datasets[dataset_name]
-                    # Generic dataset present = moderate quality
-                    return 0.7
+                    # Generic dataset present = good quality
+                    return 0.8
+                # No dataset tags but popular model = assume decent training data
+                downloads = hf_meta.get("downloads", 0)
+                if downloads > 50000:
+                    return 0.6
+                elif downloads > 10000:
+                    return 0.5
                 return 0.0
 
             # Generate LLM prompt

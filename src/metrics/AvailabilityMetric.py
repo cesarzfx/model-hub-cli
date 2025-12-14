@@ -20,6 +20,14 @@ class AvailabilityMetric(Metric):
         total_checks = 0
         successful_checks = 0
 
+        # HuggingFace metadata availability (always counts)
+        total_checks += 1
+        if model.hf_metadata:
+            successful_checks += 1
+            logger.debug("HuggingFace metadata is available")
+        else:
+            logger.warning("HuggingFace metadata is missing")
+
         # GitHub repo metadata
         if model.codeLink:
             total_checks += 1

@@ -297,14 +297,16 @@ class CodeQualityMetric(Metric):
         # Integration with major libraries suggests code quality
         library = hf_meta.get("library_name", "")
         if library in ["transformers", "diffusers", "timm", "sentence-transformers"]:
-            score += 0.4
+            score += 0.5
 
         # Popularity suggests quality
         downloads = hf_meta.get("downloads", 0)
         if downloads > 50000:
-            score += 0.3
+            score += 0.35
         elif downloads > 10000:
-            score += 0.2
+            score += 0.25
+        elif downloads > 1000:
+            score += 0.15
 
         # Multiple format support suggests quality
         tags = hf_meta.get("tags", [])
@@ -314,8 +316,10 @@ class CodeQualityMetric(Metric):
             if tag in ["pytorch", "tensorflow", "tf", "jax", "safetensors"]
         )
         if formats >= 3:
-            score += 0.2
+            score += 0.25
         elif formats >= 2:
-            score += 0.1
+            score += 0.15
+        elif formats >= 1:
+            score += 0.10
 
         return min(1.0, score)

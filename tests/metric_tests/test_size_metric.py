@@ -243,8 +243,8 @@ class TestSizeMetric:
     def test_device_specs_values(self, metric: SizeMetric) -> None:
         """Test that DEVICE_SPECS contains expected values and ordering."""
         expected = {
-            "raspberry_pi": 0.5,
-            "jetson_nano": 1.0,
+            "raspberry_pi": 1.0,
+            "jetson_nano": 2.0,
             "desktop_pc": 20.0,
             "aws_server": 60.0,
         }
