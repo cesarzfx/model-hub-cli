@@ -117,31 +117,31 @@ class RampUpMetric(Metric):
         if hf_meta.get("readme"):
             readme_len = len(str(hf_meta.get("readme", "")))
             if readme_len > 5000:
-                score += 0.30  # Detailed README
+                score += 0.20  # Detailed README
             elif readme_len > 1000:
-                score += 0.20  # Basic README
+                score += 0.15  # Basic README
             elif readme_len > 100:
-                score += 0.10  # Minimal README
+                score += 0.08  # Minimal README
 
         # Widget data indicates usage examples
         if hf_meta.get("widgetData") or hf_meta.get("cardData", {}).get("widget"):
-            score += 0.25  # Has usage examples
+            score += 0.15  # Has usage examples
 
         # Pipeline tag indicates clear use case
         if hf_meta.get("pipeline_tag"):
-            score += 0.20  # Clear task definition
+            score += 0.12  # Clear task definition
 
         # Popularity indicates community validation and documentation
         downloads = hf_meta.get("downloads", 0)
         likes = hf_meta.get("likes", 0)
         if downloads > 10000 or likes > 50:
-            score += 0.30  # Popular models tend to have better docs
+            score += 0.20  # Popular models tend to have better docs
         elif downloads > 1000 or likes > 10:
-            score += 0.20
+            score += 0.12
 
         # ArXiv papers indicate academic documentation
         tags = hf_meta.get("tags", [])
         if any("arxiv:" in tag for tag in tags):
-            score += 0.15
+            score += 0.08
 
-        return min(1.0, score)
+        return min(0.85, score)  # Cap at 0.85 for heuristic

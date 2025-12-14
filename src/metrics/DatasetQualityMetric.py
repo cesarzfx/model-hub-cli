@@ -85,31 +85,31 @@ class DatasetQualityMetric(Metric):
                     logger.info(f"Found dataset tags: {dataset_tags}")
                     # Known high-quality datasets
                     quality_datasets = {
-                        "squad": 1.0,
-                        "squad_v2": 1.0,
-                        "glue": 0.9,
-                        "super_glue": 0.9,
-                        "imagenet": 1.0,
-                        "coco": 0.95,
-                        "common_voice": 0.9,
-                        "librispeech": 0.9,
-                        "wikitext": 0.85,
-                        "bookcorpus": 0.85,
-                        "c4": 0.85,
-                        "openwebtext": 0.8,
+                        "squad": 0.85,
+                        "squad_v2": 0.85,
+                        "glue": 0.80,
+                        "super_glue": 0.80,
+                        "imagenet": 0.85,
+                        "coco": 0.80,
+                        "common_voice": 0.75,
+                        "librispeech": 0.75,
+                        "wikitext": 0.70,
+                        "bookcorpus": 0.70,
+                        "c4": 0.70,
+                        "openwebtext": 0.65,
                     }
                     for tag in dataset_tags:
                         dataset_name = tag.split(":")[1].lower()
                         if dataset_name in quality_datasets:
                             return quality_datasets[dataset_name]
-                    # Generic dataset present = good quality
-                    return 0.8
-                # No dataset tags but popular model = assume decent training data
+                    # Generic dataset present = moderate quality
+                    return 0.6
+                # No dataset tags but popular model = assume some training data
                 downloads = hf_meta.get("downloads", 0)
                 if downloads > 50000:
-                    return 0.6
+                    return 0.45
                 elif downloads > 10000:
-                    return 0.5
+                    return 0.35
                 return 0.0
 
             # Generate LLM prompt

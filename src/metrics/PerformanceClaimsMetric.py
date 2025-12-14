@@ -117,22 +117,22 @@ class PerformanceClaimsMetric(Metric):
         # ArXiv papers strongly indicate performance claims
         arxiv_count = sum(1 for tag in tags if "arxiv:" in tag)
         if arxiv_count >= 2:
-            score += 0.6  # Multiple papers = strong claims
+            score += 0.40  # Multiple papers = strong claims
         elif arxiv_count == 1:
-            score += 0.4  # One paper = some claims
+            score += 0.25  # One paper = some claims
 
         # Widget data with examples suggests documented performance
         if hf_meta.get("widgetData") or hf_meta.get("cardData", {}).get("widget"):
-            score += 0.25
+            score += 0.15
 
         # Specific dataset tags indicate benchmarking
         benchmark_datasets = ["squad", "glue", "superglue", "imagenet", "coco"]
         if any(f"dataset:{ds}" in tag for tag in tags for ds in benchmark_datasets):
-            score += 0.35
+            score += 0.25
 
         # Popular models likely have performance claims
         downloads = hf_meta.get("downloads", 0)
         if downloads > 10000:
-            score += 0.2
+            score += 0.12
 
-        return min(1.0, score)
+        return min(0.85, score)  # Cap at 0.85 for heuristic

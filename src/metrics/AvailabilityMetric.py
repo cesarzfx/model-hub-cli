@@ -46,7 +46,7 @@ class AvailabilityMetric(Metric):
         if total_checks == 0:
             if has_meaningful_hf:
                 logger.info("No code/dataset links, using HF metadata availability")
-                return 1.0
+                return 0.7  # Moderate score for HF-only models
             logger.warning("No resources to evaluate availability for")
             return 0.0
 

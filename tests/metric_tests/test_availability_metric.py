@@ -61,14 +61,14 @@ from tests.conftest import StubModelData
             {"downloads": 100},
             1.0,
         ),
-        # No links but HF metadata with downloads = 1.0 (fallback)
+        # No links but HF metadata with downloads = 0.7 (fallback)
         (
             None,
             None,
             {},
             {},
             {"downloads": 100},
-            1.0,
+            0.7,
         ),
         # No links and no HF metadata = 0.0
         (
