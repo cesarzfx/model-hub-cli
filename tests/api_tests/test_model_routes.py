@@ -74,7 +74,7 @@ class TestModelRating:
         # Should return 200 with rating data
         assert response.status_code == 200
         data = response.json()
-        
+
         # Validate ModelRating schema fields
         assert "name" in data
         assert "category" in data
@@ -91,14 +91,14 @@ class TestModelRating:
         assert "reviewedness" in data
         assert "tree_score" in data
         assert "size_score" in data
-        
+
         # Validate size_score structure
         size_score = data["size_score"]
         assert "raspberry_pi" in size_score
         assert "jetson_nano" in size_score
         assert "desktop_pc" in size_score
         assert "aws_server" in size_score
-        
+
         # All scores should be between 0 and 1
         for key in data:
             if key.endswith("_score") and key != "size_score":

@@ -19,7 +19,9 @@ def test_huggingface_fetcher_success():
     metadata = fetcher.fetch_metadata(url)
 
     session.get.assert_called_once_with(
-        "https://huggingface.co/api/models/organization/model-id", timeout=5, allow_redirects=True
+        "https://huggingface.co/api/models/organization/model-id",
+        timeout=5,
+        allow_redirects=True,
     )
     assert metadata == {"id": "model-id", "downloads": 1000}
 
